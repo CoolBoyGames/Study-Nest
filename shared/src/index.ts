@@ -143,6 +143,13 @@ export {
 
 export { parseCardsCsv, serializeCardsCsv, type CsvCardRow } from './csv.js';
 
+export {
+  SAMPLE_DECK_CARDS,
+  SAMPLE_DECK_DESCRIPTION,
+  SAMPLE_DECK_NAME,
+  type SeedVocabItem,
+} from './seedData.js';
+
 export interface TodoItem {
   id: string;
   title: string;

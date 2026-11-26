@@ -57,22 +57,20 @@ export function VocabImportExport({ deckId, deckName, onImport }: VocabImportExp
           Export “{deckName}”
         </span>
         <div className="grid grid-cols-2 gap-2">
-          <a
-            href={vocabApi.exportUrl(deckId, 'csv')}
-            download
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border-control)] bg-[var(--surface)] px-3 text-sm font-medium text-[var(--text)] hover:bg-[var(--surface-hover)]"
+          <Button
+            variant="outline"
+            onClick={() => void vocabApi.downloadExport(deckId, 'csv')}
           >
             <Download size={15} strokeWidth={1.5} />
             Export CSV
-          </a>
-          <a
-            href={vocabApi.exportUrl(deckId, 'json')}
-            download
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border-control)] bg-[var(--surface)] px-3 text-sm font-medium text-[var(--text)] hover:bg-[var(--surface-hover)]"
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => void vocabApi.downloadExport(deckId, 'json')}
           >
             <Download size={15} strokeWidth={1.5} />
             Export JSON
-          </a>
+          </Button>
         </div>
       </div>
 

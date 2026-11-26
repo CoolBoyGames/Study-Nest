@@ -12,10 +12,12 @@ interface ChannelMeta {
   icon: typeof CloudRain;
 }
 
+const BASE = import.meta.env.BASE_URL;
+
 const CHANNELS: ChannelMeta[] = [
-  { id: 'rain', label: 'Soft Rain', src: '/audio/rain.wav', icon: CloudRain },
-  { id: 'cafe', label: 'Warm Cafe', src: '/audio/cafe.wav', icon: Coffee },
-  { id: 'white-noise', label: 'White Noise', src: '/audio/white-noise.wav', icon: Wind },
+  { id: 'rain', label: 'Soft Rain', src: `${BASE}audio/rain.wav`, icon: CloudRain },
+  { id: 'cafe', label: 'Warm Cafe', src: `${BASE}audio/cafe.wav`, icon: Coffee },
+  { id: 'white-noise', label: 'White Noise', src: `${BASE}audio/white-noise.wav`, icon: Wind },
 ];
 
 export function AmbientSoundsWidget() {

@@ -27,6 +27,14 @@ npm run dev
 - `npm test` — Run Vitest unit & integration tests
 - `npm run build` — Build all workspaces
 
+## GitHub Pages Deployment
+
+This repo includes [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) to build and publish `client/dist` to GitHub Pages with a `localStorage`-backed fallback for Vocab SRS, To-Dos, Notes, and Analytics.
+
+1. Open your repository **Settings → Pages** on GitHub.
+2. Under **Build and deployment → Source**, select **GitHub Actions** (instead of *Deploy from a branch*, which serves `README.md`).
+3. Every push to `main` automatically deploys the StudyNest web app.
+
 ## Features
 
 ### Phase 1 — Study Window (Implemented)
