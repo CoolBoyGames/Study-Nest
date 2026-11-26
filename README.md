@@ -1,0 +1,52 @@
+# StudyNest
+
+A personal, local-first study-space web application inspired by lifeat.io — built with calm mild-blue aesthetics, frosted-glass draggable widgets, and academic typography.
+
+## Tech Stack
+
+- **Monorepo:** npm workspaces (`/client`, `/server`, `/shared`)
+- **Client:** React 19, Vite, TypeScript, Tailwind CSS v4, Zustand, Lucide React
+- **Server:** Node.js, Express 5, TypeScript, SQLite (`better-sqlite3`), Zod
+- **Testing & Quality:** Vitest, ESLint, strict TypeScript
+
+## Setup
+
+```bash
+npm install
+npm run dev
+```
+
+- Client dev server: `http://localhost:5173`
+- API server: `http://localhost:3001` (health check at `GET /api/health`)
+
+## Scripts
+
+- `npm run dev` — Run client and server concurrently
+- `npm run typecheck` — Typecheck `shared`, `server`, and `client`
+- `npm run lint` — Run ESLint across the monorepo
+- `npm test` — Run Vitest unit & integration tests
+- `npm run build` — Build all workspaces
+
+## Features
+
+### Phase 1 — Study Window (Implemented)
+- **Backgrounds:** 6 gradient presets, image URL or optimized local photo upload, looping video URL (pauses when tab is hidden), and backdrop blur/dim sliders.
+- **Clock:** Digital/analog SVG toggle, 12h/24h format, and date display.
+- **Pomodoro Focus Timer:** Custom focus/short-break/long-break durations, auto-cycle, soft Web Audio chime, and optional desktop notifications.
+- **Spotify Embed:** Paste any Spotify playlist, album, track, episode, or show URL/URI; remembers the last link.
+- **Ambient Sounds:** Soft rain, warm cafe, and white noise with individual play/pause and volume sliders backed by local looping WAV audio.
+- **Themes:** 5 instant CSS-variable themes (Mild Blue default, Sage, Dusk, Paper Light, Midnight).
+- **Widget Window System:** Frosted-glass panels with drag-and-drop (8px grid snap, viewport clamping), minimize/close, bottom dock, responsive tablet/mobile layouts, and `localStorage` persistence.
+
+### Phase 2 — Spaced-Repetition Vocabulary (Implemented)
+- **Decks & Cards:** Create/delete decks, quick-add/edit/delete cards (`word`, `meaning`, `partOfSpeech`, `example`, `notes`, `tags`), and live search.
+- **SM-2 Scheduler:** Pure, unit-tested SM-2 scheduling with 4-point ratings (`Again`, `Hard`, `Good`, `Easy`) and interval previews.
+- **Review Session Widget:** Due-today queue, `Space` to flip, `1–4` keyboard ratings, slim progress bar, and end-of-session summary.
+- **Import / Export & Stats:** CSV and JSON import/export per deck, plus live stats (due today, new/learned counts, retention rate, review streak).
+- **Seed Data:** Automatically seeds the *Academic & GRE Core* deck (10 cards) on first startup.
+
+### Phase 3 — Supporting Tools (Implemented)
+- **Daily To-Do List & Goals:** Add/check/delete today's tasks, set daily task & focus-minute targets, and track completion progress.
+- **Markdown Scratchpad Notes:** Multiple notes, write/preview modes, and 500ms debounced autosave to SQLite.
+- **Study Analytics:** Automatic Pomodoro session logging plus manual session entry, 14-day focus minutes bar chart, and 12-week (84-day) streak heatmap.
+- **Focus Mode & Keyboard Shortcuts:** Toggle Focus Mode (`F`) to hide the dock and keep only chosen widgets visible; press `?` to open the shortcut help overlay and configure Focus Mode widgets (`Alt + 1..9` widget toggles, `Esc` to close/exit).

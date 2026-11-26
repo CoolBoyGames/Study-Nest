@@ -1,0 +1,28 @@
+{
+  "name": "studynest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "npm --workspace=shared run build && concurrently -n server,client -c green,blue \"npm --workspace=server run dev\" \"npm --workspace=client run dev\"",
+    "typecheck": "npm --workspace=shared run build && npm --workspace=server run typecheck && npm --workspace=client run typecheck",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "build": "npm --workspace=shared run build && npm --workspace=server run build && npm --workspace=client run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "concurrently": "10.0.7",
+    "eslint": "10.15.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.8",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.74.0",
+    "vitest": "5.1.2"
+  }
+}
