@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -52,6 +53,41 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Wait for any legacy branch Pages build to finish first
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          node -e '
+            (async () => {
+              const url = `https://api.github.com/repos/${process.env.REPO}/actions/runs?head_sha=${process.env.SHA}&per_page=20`;
+              for (let i = 0; i < 30; i++) {
+                const res = await fetch(url, {
+                  headers: {
+                    "User-Agent": "StudyNest-Pages-Sync",
+                    Authorization: `Bearer ${process.env.GH_TOKEN}`,
+                  },
+                });
+                if (!res.ok) break;
+                const data = await res.json();
+                const legacy = (data.workflow_runs || []).find(
+                  (r) => r.name === "pages build and deployment"
+                );
+                if (!legacy) {
+                  console.log("No legacy branch Pages run found; deploying now.");
+                  break;
+                }
+                console.log("Legacy branch Pages run:", legacy.status, legacy.conclusion);
+                if (legacy.status === "completed") {
+                  await new Promise((r) => setTimeout(r, 3000));
+                  break;
+                }
+                await new Promise((r) => setTimeout(r, 3000));
+              }
+            })();
+          '
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
