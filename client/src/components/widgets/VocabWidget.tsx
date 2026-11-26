@@ -8,6 +8,7 @@ import type {
   VocabCardWithPreviews,
 } from '@studyspace/shared';
 import { vocabApi, type CardPayload } from '../../api/vocab';
+import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { Button, EmptyState, IconButton, Input, Modal, Select, Skeleton, Tabs } from '../ui';
 import { VocabCardsManager } from './vocab/VocabCardsManager';
@@ -24,6 +25,8 @@ const VOCAB_TABS: { id: VocabTab; label: string }[] = [
 
 export function VocabWidget() {
   const pushToast = useToastStore((s) => s.push);
+  const vocabQuickAddDraft = useSettingsStore((s) => s.vocabQuickAddDraft);
+  const setVocabQuickAddDraft = useSettingsStore((s) => s.setVocabQuickAddDraft);
 
   const [tab, setTab] = useState<VocabTab>('review');
   const [decks, setDecks] = useState<DeckWithCounts[]>([]);
@@ -235,6 +238,7 @@ export function VocabWidget() {
   }
 
   const activeDeck = decks.find((d) => d.id === selectedDeckId);
+  const activeTab: VocabTab = vocabQuickAddDraft ? 'cards' : tab;
 
   return (
     <div className="flex flex-col gap-3">
@@ -311,9 +315,17 @@ export function VocabWidget() {
             </div>
           )}
 
-          <Tabs items={VOCAB_TABS} value={tab} onChange={setTab} ariaLabel="Vocabulary tools" />
+          <Tabs
+            items={VOCAB_TABS}
+            value={activeTab}
+            onChange={(next) => {
+              if (vocabQuickAddDraft && next !== 'cards') setVocabQuickAddDraft(null);
+              setTab(next);
+            }}
+            ariaLabel="Vocabulary tools"
+          />
 
-          {tab === 'review' && (
+          {activeTab === 'review' && (
             <VocabReviewSession
               queue={queue}
               stats={stats}
@@ -323,11 +335,14 @@ export function VocabWidget() {
             />
           )}
 
-          {tab === 'cards' && (
+          {activeTab === 'cards' && (
             <VocabCardsManager
+              key={vocabQuickAddDraft?.word ?? 'default'}
               deckName={activeDeck.name}
               cards={cards}
               search={search}
+              prefillDraft={vocabQuickAddDraft}
+              onClearPrefill={() => setVocabQuickAddDraft(null)}
               onSearchChange={(val) => void handleSearchChange(val)}
               onCreateCard={handleCreateCard}
               onUpdateCard={handleUpdateCard}
@@ -335,7 +350,7 @@ export function VocabWidget() {
             />
           )}
 
-          {tab === 'io' && (
+          {activeTab === 'io' && (
             <VocabImportExport
               deckId={activeDeck.id}
               deckName={activeDeck.name}

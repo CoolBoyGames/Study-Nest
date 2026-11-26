@@ -1,24 +1,44 @@
 import {
   addDaysIso,
+  getDayOfWeekFromIso,
+  getNextRecurringDueDate,
   getTodayIsoDate,
   parseCardsCsv,
+  parseIcs,
   previewSm2Intervals,
+  SAMPLE_COURSES,
   SAMPLE_DECK_CARDS,
   SAMPLE_DECK_DESCRIPTION,
   SAMPLE_DECK_NAME,
+  SAMPLE_NOTES,
+  SAMPLE_TASKS,
+  SAMPLE_WEEKLY_EVENTS,
   scheduleSm2,
   serializeCardsCsv,
+  serializeIcs,
   type AnalyticsSummary,
+  type Course,
   type DailyFocusPoint,
   type DailyGoal,
   type Deck,
   type DeckWithCounts,
   type ImportCardsResponse,
+  type Notebook,
+  type NoteTag,
+  type PlannerNote,
+  type PlannerTask,
   type ReviewRating,
   type ReviewSubmissionResponse,
   type ScratchpadNote,
+  type SemesterSettings,
   type SrsStats,
   type StudySession,
+  type Subtask,
+  type TaskPriority,
+  type TaskRepeat,
+  type TaskStatus,
+  type TaskUpdateResponse,
+  type TimetableEvent,
   type TodoItem,
   type TodosDayResponse,
   type VocabCard,
@@ -44,6 +64,11 @@ interface StaticDb {
   goals: Record<string, DailyGoal>;
   notes: ScratchpadNote[];
   sessions: StudySession[];
+  courses: Course[];
+  timetableEvents: TimetableEvent[];
+  tasks: PlannerTask[];
+  notebooks: Notebook[];
+  plannerNotes: PlannerNote[];
 }
 
 function makeId(): string {
@@ -53,10 +78,115 @@ function makeId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function seedPlannerCollections(now: string): {
+  courses: Course[];
+  timetableEvents: TimetableEvent[];
+} {
+  const keyToId = new Map<string, string>();
+  const courses: Course[] = SAMPLE_COURSES.map((c) => {
+    const id = makeId();
+    keyToId.set(c.key, id);
+    return {
+      id,
+      name: c.name,
+      code: c.code,
+      color: c.color,
+      instructor: c.instructor,
+      room: c.room,
+      createdAt: now,
+      updatedAt: now,
+    };
+  });
+
+  const timetableEvents: TimetableEvent[] = SAMPLE_WEEKLY_EVENTS.map((ev) => ({
+    id: makeId(),
+    courseId: keyToId.get(ev.courseKey) ?? null,
+    title: ev.title,
+    type: ev.type,
+    dayOfWeek: ev.dayOfWeek,
+    start: ev.start,
+    end: ev.end,
+    location: ev.location,
+    repeat: 'weekly',
+    date: null,
+    notes: ev.notes,
+    createdAt: now,
+    updatedAt: now,
+  }));
+
+  return { courses, timetableEvents };
+}
+
+function seedTasksCollection(courses: Course[], now: string, today: string): PlannerTask[] {
+  const keyToId = new Map<string, string>();
+  for (const c of courses) {
+    const prefix = c.code.split(' ')[0]?.toLowerCase() ?? '';
+    if (prefix) keyToId.set(prefix, c.id);
+  }
+  return SAMPLE_TASKS.map((item, idx) => {
+    const id = makeId();
+    return {
+      id,
+      title: item.title,
+      notes: item.notes,
+      dueDate: item.dueOffsetDays === null ? null : addDaysIso(today, item.dueOffsetDays),
+      priority: item.priority,
+      courseId: item.courseKey ? (keyToId.get(item.courseKey) ?? null) : null,
+      status: item.status,
+      repeat: item.repeat,
+      sortOrder: idx,
+      createdAt: now,
+      completedAt: item.status === 'done' ? now : null,
+      subtasks: item.subtasks.map((st, sIdx) => ({
+        id: makeId(),
+        taskId: id,
+        title: st,
+        done: false,
+        sortOrder: sIdx,
+      })),
+    };
+  });
+}
+
+function seedNotesCollection(courses: Course[], now: string): {
+  notebooks: Notebook[];
+  plannerNotes: PlannerNote[];
+} {
+  const keyToId = new Map<string, string>();
+  for (const c of courses) {
+    const prefix = c.code.split(' ')[0]?.toLowerCase() ?? '';
+    if (prefix) keyToId.set(prefix, c.id);
+  }
+  const nbMap = new Map<string, Notebook>();
+  const plannerNotes: PlannerNote[] = SAMPLE_NOTES.map((item) => {
+    let nb = nbMap.get(item.notebookName);
+    if (!nb) {
+      nb = { id: makeId(), name: item.notebookName, createdAt: now };
+      nbMap.set(item.notebookName, nb);
+    }
+    return {
+      id: makeId(),
+      title: item.title,
+      body: item.body,
+      content: item.body,
+      notebookId: nb.id,
+      courseId: item.courseKey ? (keyToId.get(item.courseKey) ?? null) : null,
+      pinned: item.pinned,
+      tags: item.tags.map((t) => t.toLowerCase()),
+      createdAt: now,
+      updatedAt: now,
+    };
+  });
+  return { notebooks: Array.from(nbMap.values()), plannerNotes };
+}
+
 function createInitialDb(): StaticDb {
   const now = new Date().toISOString();
   const today = getTodayIsoDate();
   const deckId = makeId();
+  const { courses, timetableEvents } = seedPlannerCollections(now);
+  const tasks = seedTasksCollection(courses, now, today);
+  const { notebooks, plannerNotes } = seedNotesCollection(courses, now);
 
   return {
     version: 1,
@@ -99,6 +229,11 @@ function createInitialDb(): StaticDb {
       },
     ],
     sessions: [],
+    courses,
+    timetableEvents,
+    tasks,
+    notebooks,
+    plannerNotes,
   };
 }
 
@@ -116,7 +251,29 @@ function readDb(): StaticDb {
       window.localStorage.setItem(STATIC_DB_KEY, JSON.stringify(seeded));
       return seeded;
     }
-    return {
+    let changed = false;
+    let courses = parsed.courses;
+    let timetableEvents = parsed.timetableEvents;
+    if (!Array.isArray(courses)) {
+      const seededPlanner = seedPlannerCollections(new Date().toISOString());
+      courses = seededPlanner.courses;
+      timetableEvents = seededPlanner.timetableEvents;
+      changed = true;
+    }
+    let tasks = parsed.tasks;
+    if (!Array.isArray(tasks)) {
+      tasks = seedTasksCollection(courses, new Date().toISOString(), getTodayIsoDate());
+      changed = true;
+    }
+    let notebooks = parsed.notebooks;
+    let plannerNotes = parsed.plannerNotes;
+    if (!Array.isArray(plannerNotes)) {
+      const seededNotes = seedNotesCollection(courses, new Date().toISOString());
+      notebooks = seededNotes.notebooks;
+      plannerNotes = seededNotes.plannerNotes;
+      changed = true;
+    }
+    const db: StaticDb = {
       version: 1,
       decks: parsed.decks,
       cards: parsed.cards,
@@ -125,7 +282,16 @@ function readDb(): StaticDb {
       goals: parsed.goals ?? {},
       notes: parsed.notes ?? [],
       sessions: parsed.sessions ?? [],
+      courses,
+      timetableEvents: timetableEvents ?? [],
+      tasks,
+      notebooks: notebooks ?? [],
+      plannerNotes,
     };
+    if (changed) {
+      window.localStorage.setItem(STATIC_DB_KEY, JSON.stringify(db));
+    }
+    return db;
   } catch {
     return createInitialDb();
   }
@@ -610,7 +776,8 @@ export const staticToolsStore = {
   logSession(
     durationMinutes: number,
     source: 'pomodoro' | 'manual' = 'pomodoro',
-    date = getTodayIsoDate()
+    date = getTodayIsoDate(),
+    taskId: string | null = null
   ): StudySession {
     const db = readDb();
     const session: StudySession = {
@@ -618,11 +785,23 @@ export const staticToolsStore = {
       date,
       durationMinutes,
       source,
+      taskId,
       completedAt: new Date().toISOString(),
     };
     db.sessions.push(session);
     writeDb(db);
     return session;
+  },
+
+  getMinutesByTask(): Record<string, number> {
+    const db = readDb();
+    const map: Record<string, number> = {};
+    for (const s of db.sessions) {
+      if (s.taskId) {
+        map[s.taskId] = (map[s.taskId] ?? 0) + s.durationMinutes;
+      }
+    }
+    return map;
   },
 
   getAnalyticsSummary(daysCount = 84): AnalyticsSummary {
@@ -685,5 +864,401 @@ export const staticToolsStore = {
       dailyGoalMinutes: db.goals[today]?.targetMinutes ?? 120,
       days,
     };
+  },
+};
+
+export const staticPlannerStore = {
+  listCourses(): Course[] {
+    return [...readDb().courses].sort((a, b) => a.code.localeCompare(b.code) || a.name.localeCompare(b.name));
+  },
+
+  createCourse(payload: Omit<Course, 'id' | 'createdAt' | 'updatedAt'>): Course {
+    const db = readDb();
+    const now = new Date().toISOString();
+    const course: Course = { id: makeId(), ...payload, createdAt: now, updatedAt: now };
+    db.courses.push(course);
+    writeDb(db);
+    return course;
+  },
+
+  updateCourse(id: string, patch: Partial<Omit<Course, 'id' | 'createdAt' | 'updatedAt'>>): Course {
+    const db = readDb();
+    const idx = db.courses.findIndex((c) => c.id === id);
+    if (idx === -1) throw new Error('Course not found');
+    const updated: Course = {
+      ...db.courses[idx]!,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+    db.courses[idx] = updated;
+    writeDb(db);
+    return updated;
+  },
+
+  deleteCourse(id: string): void {
+    const db = readDb();
+    db.courses = db.courses.filter((c) => c.id !== id);
+    db.timetableEvents = db.timetableEvents.map((e) => (e.courseId === id ? { ...e, courseId: null } : e));
+    writeDb(db);
+  },
+
+  listEvents(): TimetableEvent[] {
+    return [...readDb().timetableEvents].sort(
+      (a, b) => a.dayOfWeek - b.dayOfWeek || a.start.localeCompare(b.start)
+    );
+  },
+
+  createEvent(payload: Omit<TimetableEvent, 'id' | 'createdAt' | 'updatedAt'>): TimetableEvent {
+    const db = readDb();
+    const now = new Date().toISOString();
+    const date = payload.repeat === 'none' ? payload.date : null;
+    const dayOfWeek = date ? getDayOfWeekFromIso(date) : payload.dayOfWeek;
+    const ev: TimetableEvent = {
+      id: makeId(),
+      ...payload,
+      date,
+      dayOfWeek,
+      createdAt: now,
+      updatedAt: now,
+    };
+    db.timetableEvents.push(ev);
+    writeDb(db);
+    return ev;
+  },
+
+  updateEvent(
+    id: string,
+    patch: Partial<Omit<TimetableEvent, 'id' | 'createdAt' | 'updatedAt'>>
+  ): TimetableEvent {
+    const db = readDb();
+    const idx = db.timetableEvents.findIndex((e) => e.id === id);
+    if (idx === -1) throw new Error('Event not found');
+    const existing = db.timetableEvents[idx]!;
+    const repeat = patch.repeat ?? existing.repeat;
+    const date = repeat === 'none' ? (patch.date !== undefined ? patch.date : existing.date) : null;
+    const dayOfWeek = date ? getDayOfWeekFromIso(date) : (patch.dayOfWeek ?? existing.dayOfWeek);
+    const updated: TimetableEvent = {
+      ...existing,
+      ...patch,
+      repeat,
+      date,
+      dayOfWeek,
+      updatedAt: new Date().toISOString(),
+    };
+    db.timetableEvents[idx] = updated;
+    writeDb(db);
+    return updated;
+  },
+
+  deleteEvent(id: string): void {
+    const db = readDb();
+    db.timetableEvents = db.timetableEvents.filter((e) => e.id !== id);
+    writeDb(db);
+  },
+
+  importIcs(ics: string, courseId: string | null): { imported: number; events: TimetableEvent[] } {
+    const db = readDb();
+    const now = new Date().toISOString();
+    const parsed = parseIcs(ics);
+    const created: TimetableEvent[] = parsed.map((item) => ({
+      id: makeId(),
+      courseId,
+      title: item.title,
+      type: item.type,
+      dayOfWeek: item.dayOfWeek,
+      start: item.start,
+      end: item.end,
+      location: item.location,
+      repeat: item.repeat,
+      date: item.date,
+      notes: item.notes,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    db.timetableEvents.push(...created);
+    writeDb(db);
+    return { imported: created.length, events: created };
+  },
+
+  exportIcs(semester: Pick<SemesterSettings, 'startDate' | 'endDate'>): string {
+    const db = readDb();
+    return serializeIcs(db.timetableEvents, db.courses, semester);
+  },
+};
+
+export const staticTasksStore = {
+  listTasks(): PlannerTask[] {
+    return [...readDb().tasks].sort(
+      (a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt)
+    );
+  },
+
+  createTask(payload: {
+    title: string;
+    notes?: string;
+    dueDate?: string | null;
+    priority?: TaskPriority;
+    courseId?: string | null;
+    status?: TaskStatus;
+    repeat?: TaskRepeat;
+    subtasks?: string[];
+  }): PlannerTask {
+    const db = readDb();
+    const now = new Date().toISOString();
+    const id = makeId();
+    const maxOrder = db.tasks.reduce((m, t) => Math.max(m, t.sortOrder), -1);
+    const status = payload.status ?? 'todo';
+    const task: PlannerTask = {
+      id,
+      title: payload.title,
+      notes: payload.notes ?? '',
+      dueDate: payload.dueDate ?? null,
+      priority: payload.priority ?? 'med',
+      courseId: payload.courseId ?? null,
+      status,
+      repeat: payload.repeat ?? 'none',
+      sortOrder: maxOrder + 1,
+      createdAt: now,
+      completedAt: status === 'done' ? now : null,
+      subtasks: (payload.subtasks ?? []).map((title, idx) => ({
+        id: makeId(),
+        taskId: id,
+        title,
+        done: false,
+        sortOrder: idx,
+      })),
+    };
+    db.tasks.push(task);
+    writeDb(db);
+    return task;
+  },
+
+  updateTask(
+    id: string,
+    patch: Partial<{
+      title: string;
+      notes: string;
+      dueDate: string | null;
+      priority: TaskPriority;
+      courseId: string | null;
+      status: TaskStatus;
+      repeat: TaskRepeat;
+      sortOrder: number;
+    }>
+  ): TaskUpdateResponse {
+    const db = readDb();
+    const idx = db.tasks.findIndex((t) => t.id === id);
+    if (idx === -1) throw new Error('Task not found');
+    const existing = db.tasks[idx]!;
+    const now = new Date().toISOString();
+    const nextStatus = patch.status ?? existing.status;
+    const becameDone = existing.status !== 'done' && nextStatus === 'done';
+
+    const updated: PlannerTask = {
+      ...existing,
+      ...patch,
+      status: nextStatus,
+      completedAt: nextStatus === 'done' ? (existing.completedAt ?? now) : null,
+    };
+    db.tasks[idx] = updated;
+
+    let nextTask: PlannerTask | null = null;
+    if (becameDone && updated.repeat !== 'none') {
+      const newId = makeId();
+      const maxOrder = db.tasks.reduce((m, t) => Math.max(m, t.sortOrder), -1);
+      nextTask = {
+        id: newId,
+        title: updated.title,
+        notes: updated.notes,
+        dueDate: getNextRecurringDueDate(updated.dueDate, updated.repeat, getTodayIsoDate()),
+        priority: updated.priority,
+        courseId: updated.courseId,
+        status: 'todo',
+        repeat: updated.repeat,
+        sortOrder: maxOrder + 1,
+        createdAt: now,
+        completedAt: null,
+        subtasks: updated.subtasks.map((s, sIdx) => ({
+          id: makeId(),
+          taskId: newId,
+          title: s.title,
+          done: false,
+          sortOrder: sIdx,
+        })),
+      };
+      db.tasks.push(nextTask);
+    }
+
+    writeDb(db);
+    return { task: updated, nextTask };
+  },
+
+  reorderTasks(orderedIds: string[]): void {
+    const db = readDb();
+    const orderMap = new Map(orderedIds.map((id, idx) => [id, idx]));
+    db.tasks = db.tasks.map((t) =>
+      orderMap.has(t.id) ? { ...t, sortOrder: orderMap.get(t.id)! } : t
+    );
+    writeDb(db);
+  },
+
+  deleteTask(id: string): void {
+    const db = readDb();
+    db.tasks = db.tasks.filter((t) => t.id !== id);
+    writeDb(db);
+  },
+
+  addSubtask(taskId: string, title: string): Subtask {
+    const db = readDb();
+    const task = db.tasks.find((t) => t.id === taskId);
+    if (!task) throw new Error('Task not found');
+    const maxOrder = task.subtasks.reduce((m, s) => Math.max(m, s.sortOrder), -1);
+    const sub: Subtask = { id: makeId(), taskId, title, done: false, sortOrder: maxOrder + 1 };
+    task.subtasks.push(sub);
+    writeDb(db);
+    return sub;
+  },
+
+  updateSubtask(id: string, patch: { title?: string; done?: boolean }): Subtask {
+    const db = readDb();
+    for (const t of db.tasks) {
+      const idx = t.subtasks.findIndex((s) => s.id === id);
+      if (idx !== -1) {
+        const updated = { ...t.subtasks[idx]!, ...patch };
+        t.subtasks[idx] = updated;
+        writeDb(db);
+        return updated;
+      }
+    }
+    throw new Error('Subtask not found');
+  },
+
+  deleteSubtask(id: string): void {
+    const db = readDb();
+    for (const t of db.tasks) {
+      t.subtasks = t.subtasks.filter((s) => s.id !== id);
+    }
+    writeDb(db);
+  },
+};
+
+export const staticNotesStore = {
+  listNotebooks(): Notebook[] {
+    return [...readDb().notebooks];
+  },
+
+  createNotebook(name: string): Notebook {
+    const db = readDb();
+    const nb: Notebook = { id: makeId(), name, createdAt: new Date().toISOString() };
+    db.notebooks.push(nb);
+    writeDb(db);
+    return nb;
+  },
+
+  deleteNotebook(id: string): void {
+    const db = readDb();
+    db.notebooks = db.notebooks.filter((n) => n.id !== id);
+    db.plannerNotes = db.plannerNotes.map((n) =>
+      n.notebookId === id ? { ...n, notebookId: null } : n
+    );
+    writeDb(db);
+  },
+
+  listTags(): NoteTag[] {
+    const db = readDb();
+    const set = new Set<string>();
+    for (const n of db.plannerNotes) {
+      for (const t of n.tags) set.add(t);
+    }
+    return Array.from(set)
+      .sort()
+      .map((name) => ({ id: name, name }));
+  },
+
+  listNotes(filters: { q?: string; notebookId?: string; courseId?: string; tag?: string } = {}): PlannerNote[] {
+    const db = readDb();
+    const q = filters.q?.trim().toLowerCase() ?? '';
+    const tag = filters.tag?.trim().toLowerCase() ?? '';
+    return db.plannerNotes
+      .filter((n) => {
+        if (filters.notebookId && n.notebookId !== filters.notebookId) return false;
+        if (filters.courseId && n.courseId !== filters.courseId) return false;
+        if (tag && !n.tags.includes(tag)) return false;
+        if (q) {
+          return (
+            n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q)
+          );
+        }
+        return true;
+      })
+      .sort(
+        (a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt.localeCompare(a.updatedAt)
+      );
+  },
+
+  createNote(payload: {
+    title?: string;
+    body?: string;
+    notebookId?: string | null;
+    courseId?: string | null;
+    pinned?: boolean;
+    tags?: string[];
+  }): PlannerNote {
+    const db = readDb();
+    const now = new Date().toISOString();
+    const body = payload.body ?? '';
+    const note: PlannerNote = {
+      id: makeId(),
+      title: payload.title ?? 'Untitled note',
+      body,
+      content: body,
+      notebookId: payload.notebookId ?? null,
+      courseId: payload.courseId ?? null,
+      pinned: payload.pinned ?? false,
+      tags: Array.from(new Set((payload.tags ?? []).map((t) => t.trim().toLowerCase()).filter(Boolean))),
+      createdAt: now,
+      updatedAt: now,
+    };
+    db.plannerNotes.unshift(note);
+    writeDb(db);
+    return note;
+  },
+
+  updateNote(
+    id: string,
+    patch: {
+      title?: string;
+      body?: string;
+      notebookId?: string | null;
+      courseId?: string | null;
+      pinned?: boolean;
+      tags?: string[];
+    }
+  ): PlannerNote {
+    const db = readDb();
+    const idx = db.plannerNotes.findIndex((n) => n.id === id);
+    if (idx === -1) throw new Error('Note not found');
+    const existing = db.plannerNotes[idx]!;
+    const body = patch.body ?? existing.body;
+    const updated: PlannerNote = {
+      ...existing,
+      ...patch,
+      body,
+      content: body,
+      tags:
+        patch.tags !== undefined
+          ? Array.from(new Set(patch.tags.map((t) => t.trim().toLowerCase()).filter(Boolean)))
+          : existing.tags,
+      updatedAt: new Date().toISOString(),
+    };
+    db.plannerNotes[idx] = updated;
+    writeDb(db);
+    return updated;
+  },
+
+  deleteNote(id: string): void {
+    const db = readDb();
+    db.plannerNotes = db.plannerNotes.filter((n) => n.id !== id);
+    writeDb(db);
   },
 };

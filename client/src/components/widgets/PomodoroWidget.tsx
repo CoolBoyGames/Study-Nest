@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pause, Play, RotateCcw, Settings2, SkipForward } from 'lucide-react';
+import { Pause, Play, RotateCcw, Settings2, SkipForward, X } from 'lucide-react';
 import type { PomodoroPhase } from '@studyspace/shared';
 import { toolsApi } from '../../api/tools';
 import { useSettingsStore } from '../../stores/useSettingsStore';
@@ -16,6 +16,8 @@ const PHASE_TABS: { id: PomodoroPhase; label: string }[] = [
 export function PomodoroWidget() {
   const settings = useSettingsStore((s) => s.pomodoro);
   const updatePomodoro = useSettingsStore((s) => s.updatePomodoro);
+  const activeTask = useSettingsStore((s) => s.activeTask);
+  const setActiveTask = useSettingsStore((s) => s.setActiveTask);
   const pushToast = useToastStore((s) => s.push);
 
   const [phase, setPhase] = useState<PomodoroPhase>('focus');
@@ -73,7 +75,7 @@ export function PomodoroWidget() {
       if (phase === 'focus') {
         if (!isSkip) {
           void toolsApi
-            .logSession(settings.focusMinutes, 'pomodoro')
+            .logSession(settings.focusMinutes, 'pomodoro', undefined, activeTask?.id ?? null)
             .then(() => {
               window.dispatchEvent(new CustomEvent('studynest:session-logged'));
             })
@@ -89,6 +91,7 @@ export function PomodoroWidget() {
       }
     },
     [
+      activeTask?.id,
       completedFocusCount,
       phase,
       pushToast,
@@ -175,6 +178,23 @@ export function PomodoroWidget() {
         onChange={(next) => switchPhase(next, false)}
         ariaLabel="Timer mode"
       />
+
+      {activeTask && (
+        <div className="flex items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs">
+          <span className="truncate text-[var(--text)]">
+            <strong className="font-medium text-[var(--primary)]">Focus:</strong>{' '}
+            {activeTask.title}
+          </span>
+          <button
+            type="button"
+            aria-label="Clear focused task"
+            onClick={() => setActiveTask(null)}
+            className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"
+          >
+            <X size={13} strokeWidth={1.5} />
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col items-center gap-2 py-1">
         <div className="tabular-nums font-heading text-[40px] font-semibold leading-none text-[var(--text)]">

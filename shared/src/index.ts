@@ -12,9 +12,11 @@ export interface BackgroundConfig {
 }
 
 export type WidgetId =
+  | 'today'
   | 'clock'
   | 'pomodoro'
   | 'vocab'
+  | 'timetable'
   | 'todos'
   | 'notes'
   | 'analytics'
@@ -144,11 +146,90 @@ export {
 export { parseCardsCsv, serializeCardsCsv, type CsvCardRow } from './csv.js';
 
 export {
+  NOTE_TEMPLATES,
+  SAMPLE_COURSES,
   SAMPLE_DECK_CARDS,
   SAMPLE_DECK_DESCRIPTION,
   SAMPLE_DECK_NAME,
+  SAMPLE_NOTES,
+  SAMPLE_TASKS,
+  SAMPLE_WEEKLY_EVENTS,
+  type SeedCourseItem,
+  type SeedEventItem,
+  type SeedNoteItem,
+  type SeedTaskItem,
   type SeedVocabItem,
 } from './seedData.js';
+
+export interface Course {
+  id: string;
+  name: string;
+  code: string;
+  color: string;
+  instructor: string;
+  room: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TimetableEventType = 'class' | 'exam' | 'deadline' | 'personal';
+export type TimetableRepeat = 'weekly' | 'none';
+
+export interface TimetableEvent {
+  id: string;
+  courseId: string | null;
+  title: string;
+  type: TimetableEventType;
+  dayOfWeek: number; // 0=Sun..6=Sat
+  start: string; // HH:MM
+  end: string; // HH:MM
+  location: string;
+  repeat: TimetableRepeat;
+  date: string | null; // YYYY-MM-DD when repeat='none'
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SemesterSettings {
+  startDate: string;
+  endDate: string;
+  weekStart: 'mon' | 'sun';
+  startHour: number;
+  endHour: number;
+  notifyMinutesBefore: number | null;
+}
+
+export interface ExpandedTimetableOccurrence {
+  eventId: string;
+  occurrenceKey: string;
+  courseId: string | null;
+  title: string;
+  type: TimetableEventType;
+  date: string;
+  dayOfWeek: number;
+  start: string;
+  end: string;
+  location: string;
+  notes: string;
+  repeat: TimetableRepeat;
+  hasConflict: boolean;
+}
+
+export {
+  detectEventConflicts,
+  expandEvents,
+  findConflictsForDraft,
+  getDayOfWeekFromIso,
+  getNextOrCurrentOccurrence,
+  getWeekRangeIso,
+  minutesToTime,
+  parseIcs,
+  serializeIcs,
+  timeToMinutes,
+  type NextUpInfo,
+  type ParsedIcsEvent,
+} from './timetable.js';
 
 export interface TodoItem {
   id: string;
@@ -174,13 +255,79 @@ export interface ScratchpadNote {
   updatedAt: string;
 }
 
+export interface Notebook {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface NoteTag {
+  id: string;
+  name: string;
+}
+
+export interface PlannerNote {
+  id: string;
+  title: string;
+  body: string;
+  content: string;
+  notebookId: string | null;
+  courseId: string | null;
+  pinned: boolean;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StudySession {
   id: string;
   date: string;
   durationMinutes: number;
   source: 'pomodoro' | 'manual';
+  taskId?: string | null;
   completedAt: string;
 }
+
+export type TaskPriority = 'low' | 'med' | 'high';
+export type TaskStatus = 'todo' | 'doing' | 'done';
+export type TaskRepeat = 'none' | 'daily' | 'weekly';
+
+export interface Subtask {
+  id: string;
+  taskId: string;
+  title: string;
+  done: boolean;
+  sortOrder: number;
+}
+
+export interface PlannerTask {
+  id: string;
+  title: string;
+  notes: string;
+  dueDate: string | null;
+  priority: TaskPriority;
+  courseId: string | null;
+  status: TaskStatus;
+  repeat: TaskRepeat;
+  sortOrder: number;
+  createdAt: string;
+  completedAt: string | null;
+  subtasks: Subtask[];
+}
+
+export interface TaskUpdateResponse {
+  task: PlannerTask;
+  nextTask: PlannerTask | null;
+}
+
+export {
+  filterTasks,
+  getNextRecurringDueDate,
+  parseQuickAdd,
+  type ParsedQuickAdd,
+  type TaskFilterOptions,
+  type TaskViewMode,
+} from './tasks.js';
 
 export interface TodosDayResponse {
   date: string;

@@ -83,14 +83,20 @@ export const toolsApi = {
   logSession: async (
     durationMinutes: number,
     source: 'pomodoro' | 'manual' = 'pomodoro',
-    date?: string
+    date?: string,
+    taskId: string | null = null
   ) =>
     isStaticMode()
-      ? staticToolsStore.logSession(durationMinutes, source, date)
+      ? staticToolsStore.logSession(durationMinutes, source, date, taskId)
       : apiFetch<StudySession>('/api/analytics/sessions', {
           method: 'POST',
-          body: JSON.stringify({ durationMinutes, source, date }),
+          body: JSON.stringify({ durationMinutes, source, date, taskId }),
         }),
+
+  getMinutesByTask: async () =>
+    isStaticMode()
+      ? staticToolsStore.getMinutesByTask()
+      : apiFetch<Record<string, number>>('/api/analytics/by-task'),
 
   getAnalyticsSummary: async (days = 84) =>
     isStaticMode()

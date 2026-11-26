@@ -55,6 +55,12 @@ This repo includes [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml
 
 ### Phase 3 — Supporting Tools (Implemented)
 - **Daily To-Do List & Goals:** Add/check/delete today's tasks, set daily task & focus-minute targets, and track completion progress.
-- **Markdown Scratchpad Notes:** Multiple notes, write/preview modes, and 500ms debounced autosave to SQLite.
+- **Markdown Scratchpad Notes:** Multiple notes, write/preview modes, and autosave to SQLite.
 - **Study Analytics:** Automatic Pomodoro session logging plus manual session entry, 14-day focus minutes bar chart, and 12-week (84-day) streak heatmap.
-- **Focus Mode & Keyboard Shortcuts:** Toggle Focus Mode (`F`) to hide the dock and keep only chosen widgets visible; press `?` to open the shortcut help overlay and configure Focus Mode widgets (`Alt + 1..9` widget toggles, `Esc` to close/exit).
+- **Focus Mode & Keyboard Shortcuts:** Toggle Focus Mode (`F`) to hide the dock and keep only chosen widgets visible; press `?` to open the shortcut help overlay and configure Focus Mode widgets (`T` timetable, `K` tasks, `N` notes, `Alt + 1..9` widget toggles, `Esc` to close/exit).
+
+### Phase 4 — Planner Suite (Implemented)
+- **Courses & Timetable (`T`):** Week grid, Day, and Agenda views with current-time line, drag-to-create/move/resize, arrow-key navigation, conflict detection, "Next up" countdown banner, ICS import/export, and optional browser reminders.
+- **Enhanced To-Do (`K`):** Today, Upcoming, Overdue, Done, and All views; inline quick-add syntax (`"Essay !high #cs201 tomorrow"`); subtasks; drag-to-reorder; undo toast; recurring regeneration; Pomodoro `"Focus on this"` linking; and due tasks surfaced on the timetable.
+- **Enhanced Notes (`N`):** Split list/editor/live preview, 300ms debounced autosave, SQLite FTS5 full-text search, notebooks/tags/courses filtering, templates (`Lecture`, `Cornell`, `Meeting`, `Blank`), formatting toolbar, `.md` export, and selected-text → Vocab quick-add.
+- **Today Overview & Shared Course Filter:** Dedicated Today widget showing next class, due tasks, vocab due, focus minutes, and a shared course filter synchronized across Timetable, Tasks, and Notes.

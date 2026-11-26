@@ -8,6 +8,8 @@ export interface VocabCardsManagerProps {
   deckName: string;
   cards: VocabCard[];
   search: string;
+  prefillDraft?: { word: string; notes: string } | null;
+  onClearPrefill?: () => void;
   onSearchChange: (val: string) => void;
   onCreateCard: (payload: CardPayload) => Promise<void>;
   onUpdateCard: (cardId: string, payload: CardPayload) => Promise<void>;
@@ -27,14 +29,20 @@ export function VocabCardsManager({
   deckName,
   cards,
   search,
+  prefillDraft,
+  onClearPrefill,
   onSearchChange,
   onCreateCard,
   onUpdateCard,
   onDeleteCard,
 }: VocabCardsManagerProps) {
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(Boolean(prefillDraft));
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(() =>
+    prefillDraft
+      ? { ...EMPTY_FORM, word: prefillDraft.word, notes: prefillDraft.notes }
+      : EMPTY_FORM
+  );
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -90,6 +98,7 @@ export function VocabCardsManager({
       setForm(EMPTY_FORM);
       setEditingId(null);
       setShowForm(false);
+      onClearPrefill?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save card.');
     } finally {

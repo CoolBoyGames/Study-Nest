@@ -5,6 +5,7 @@ import type {
   BackgroundConfig,
   ClockSettings,
   PomodoroSettings,
+  SemesterSettings,
   ThemeId,
   WidgetId,
   WidgetLayout,
@@ -23,9 +24,11 @@ interface PersistedSettings {
   ambientVolumes: Record<AmbientChannelId, number>;
   widgets: Record<WidgetId, WidgetLayout>;
   focusWidgetIds: WidgetId[];
+  semester: SemesterSettings;
 }
 
 const DEFAULT_WIDGETS: Record<WidgetId, WidgetLayout> = {
+  today: { id: 'today', visible: false, minimized: false, x: 384, y: 32, width: 360, zIndex: 21 },
   clock: { id: 'clock', visible: true, minimized: false, x: 32, y: 32, width: 280, zIndex: 11 },
   pomodoro: {
     id: 'pomodoro',
@@ -87,7 +90,7 @@ const DEFAULT_WIDGETS: Record<WidgetId, WidgetLayout> = {
     minimized: false,
     x: 384,
     y: 360,
-    width: 384,
+    width: 580,
     zIndex: 18,
   },
   analytics: {
@@ -98,6 +101,15 @@ const DEFAULT_WIDGETS: Record<WidgetId, WidgetLayout> = {
     y: 32,
     width: 424,
     zIndex: 19,
+  },
+  timetable: {
+    id: 'timetable',
+    visible: false,
+    minimized: false,
+    x: 368,
+    y: 32,
+    width: 680,
+    zIndex: 20,
   },
 };
 
@@ -134,6 +146,14 @@ const DEFAULT_PERSISTED: PersistedSettings = {
   },
   widgets: DEFAULT_WIDGETS,
   focusWidgetIds: ['clock', 'pomodoro'],
+  semester: {
+    startDate: '2026-08-24',
+    endDate: '2026-12-20',
+    weekStart: 'mon',
+    startHour: 8,
+    endHour: 21,
+    notifyMinutesBefore: 10,
+  },
 };
 
 function loadPersisted(): PersistedSettings {
@@ -152,6 +172,7 @@ function loadPersisted(): PersistedSettings {
       spotifyUrl: typeof parsed.spotifyUrl === 'string' ? parsed.spotifyUrl : '',
       ambientVolumes: { ...DEFAULT_PERSISTED.ambientVolumes, ...parsed.ambientVolumes },
       widgets: {
+        today: { ...DEFAULT_WIDGETS.today, ...parsed.widgets?.today },
         clock: { ...DEFAULT_WIDGETS.clock, ...parsed.widgets?.clock },
         pomodoro: { ...DEFAULT_WIDGETS.pomodoro, ...parsed.widgets?.pomodoro },
         ambient: { ...DEFAULT_WIDGETS.ambient, ...parsed.widgets?.ambient },
@@ -161,11 +182,13 @@ function loadPersisted(): PersistedSettings {
         todos: { ...DEFAULT_WIDGETS.todos, ...parsed.widgets?.todos },
         notes: { ...DEFAULT_WIDGETS.notes, ...parsed.widgets?.notes },
         analytics: { ...DEFAULT_WIDGETS.analytics, ...parsed.widgets?.analytics },
+        timetable: { ...DEFAULT_WIDGETS.timetable, ...parsed.widgets?.timetable },
       },
       focusWidgetIds:
         Array.isArray(parsed.focusWidgetIds) && parsed.focusWidgetIds.length > 0
           ? parsed.focusWidgetIds
           : DEFAULT_PERSISTED.focusWidgetIds,
+      semester: { ...DEFAULT_PERSISTED.semester, ...parsed.semester },
     };
   } catch {
     return DEFAULT_PERSISTED;
@@ -194,6 +217,7 @@ function schedulePersist(state: SettingsStore): void {
       },
       widgets: state.widgets,
       focusWidgetIds: state.focusWidgetIds,
+      semester: state.semester,
     };
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -216,6 +240,10 @@ interface SettingsStore {
   activeMobileWidget: WidgetId | null;
   focusMode: boolean;
   focusWidgetIds: WidgetId[];
+  semester: SemesterSettings;
+  activeTask: { id: string; title: string } | null;
+  vocabQuickAddDraft: { word: string; notes: string } | null;
+  selectedCourseId: string;
 
   setTheme: (theme: ThemeId) => void;
   updateBackground: (patch: Partial<BackgroundConfig>) => void;
@@ -234,6 +262,10 @@ interface SettingsStore {
   toggleFocusMode: () => void;
   setFocusMode: (enabled: boolean) => void;
   toggleFocusWidget: (id: WidgetId) => void;
+  updateSemester: (patch: Partial<SemesterSettings>) => void;
+  setActiveTask: (task: { id: string; title: string } | null) => void;
+  setVocabQuickAddDraft: (draft: { word: string; notes: string } | null) => void;
+  setSelectedCourseId: (courseId: string) => void;
 }
 
 const initial = typeof window !== 'undefined' ? loadPersisted() : DEFAULT_PERSISTED;
@@ -253,6 +285,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   activeMobileWidget: 'clock',
   focusMode: false,
   focusWidgetIds: initial.focusWidgetIds,
+  semester: initial.semester,
+  activeTask: null,
+  vocabQuickAddDraft: null,
+  selectedCourseId: '',
 
   setTheme: (theme) => {
     set({ theme });
@@ -397,4 +433,15 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     });
     schedulePersist(get());
   },
+
+  updateSemester: (patch) => {
+    set((s) => ({ semester: { ...s.semester, ...patch } }));
+    schedulePersist(get());
+  },
+
+  setActiveTask: (activeTask) => set({ activeTask }),
+
+  setVocabQuickAddDraft: (vocabQuickAddDraft) => set({ vocabQuickAddDraft }),
+
+  setSelectedCourseId: (selectedCourseId) => set({ selectedCourseId }),
 }));

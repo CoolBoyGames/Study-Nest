@@ -1,6 +1,7 @@
 import {
   BarChart3,
   BookOpen,
+  CalendarDays,
   CheckSquare,
   Clock,
   CloudRain,
@@ -10,6 +11,7 @@ import {
   Music,
   Palette,
   RotateCcw,
+  Sun,
   Timer,
 } from 'lucide-react';
 import type { WidgetId } from '@studyspace/shared';
@@ -24,8 +26,10 @@ interface DockItem {
 }
 
 const DOCK_ITEMS: DockItem[] = [
+  { id: 'today', label: 'Today', icon: Sun },
   { id: 'clock', label: 'Clock', icon: Clock },
   { id: 'pomodoro', label: 'Pomodoro Timer', icon: Timer },
+  { id: 'timetable', label: 'Timetable', icon: CalendarDays },
   { id: 'vocab', label: 'Vocabulary SRS', icon: BookOpen },
   { id: 'todos', label: 'Daily To-Do', icon: CheckSquare },
   { id: 'notes', label: 'Scratchpad Notes', icon: FileText },

@@ -12,12 +12,14 @@ import { AppearanceWidget } from './components/widgets/AppearanceWidget';
 import { ClockWidget } from './components/widgets/ClockWidget';
 import { NotesWidget } from './components/widgets/NotesWidget';
 import { PomodoroWidget } from './components/widgets/PomodoroWidget';
+import { TodayWidget } from './components/widgets/TodayWidget';
 import { TodosWidget } from './components/widgets/TodosWidget';
 import { useSettingsStore } from './stores/useSettingsStore';
 
 const SpotifyWidget = lazy(() => import('./components/widgets/SpotifyWidget'));
 const VocabWidget = lazy(() => import('./components/widgets/VocabWidget'));
 const AnalyticsWidget = lazy(() => import('./components/widgets/AnalyticsWidget'));
+const TimetableWidget = lazy(() => import('./components/widgets/TimetableWidget'));
 
 type LayoutMode = 'free' | 'grid' | 'sheet';
 
@@ -106,6 +108,30 @@ export function App() {
         return;
       }
 
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 't') {
+        if (!document.querySelector('[role="dialog"]')) {
+          e.preventDefault();
+          toggleWidget('timetable');
+        }
+        return;
+      }
+
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'k') {
+        if (!document.querySelector('[role="dialog"]')) {
+          e.preventDefault();
+          toggleWidget('todos');
+        }
+        return;
+      }
+
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'n') {
+        if (!document.querySelector('[role="dialog"]')) {
+          e.preventDefault();
+          toggleWidget('notes');
+        }
+        return;
+      }
+
       if (e.altKey && SHORTCUT_WIDGET_MAP[e.key]) {
         const wid = SHORTCUT_WIDGET_MAP[e.key];
         if (wid) {
@@ -121,6 +147,8 @@ export function App() {
 
   const renderWidgetContent = (id: WidgetId) => {
     switch (id) {
+      case 'today':
+        return <TodayWidget />;
       case 'clock':
         return <ClockWidget />;
       case 'pomodoro':
@@ -151,12 +179,20 @@ export function App() {
         );
       case 'appearance':
         return <AppearanceWidget />;
+      case 'timetable':
+        return (
+          <Suspense fallback={<Skeleton className="h-72 w-full" />}>
+            <TimetableWidget />
+          </Suspense>
+        );
     }
   };
 
   const widgetDefs: { id: WidgetId; title: string }[] = [
+    { id: 'today', title: 'Today' },
     { id: 'clock', title: 'Clock' },
     { id: 'pomodoro', title: 'Focus Timer' },
+    { id: 'timetable', title: 'Timetable' },
     { id: 'vocab', title: 'Vocabulary SRS' },
     { id: 'todos', title: 'Daily To-Do' },
     { id: 'notes', title: 'Scratchpad' },

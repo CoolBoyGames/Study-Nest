@@ -8,7 +8,6 @@ import {
   type AnalyticsSummary,
   type DailyFocusPoint,
   type DailyGoal,
-  type ScratchpadNote,
   type StudySession,
   type TodoItem,
   type TodosDayResponse,
@@ -32,18 +31,12 @@ interface GoalRow {
   updated_at: string;
 }
 
-interface NoteRow {
-  id: string;
-  title: string;
-  content: string;
-  updated_at: string;
-}
-
 interface SessionRow {
   id: string;
   date: string;
   duration_minutes: number;
   source: 'pomodoro' | 'manual';
+  task_id: string | null;
   completed_at: string;
 }
 
@@ -68,21 +61,13 @@ function mapGoal(row: GoalRow): DailyGoal {
   };
 }
 
-function mapNote(row: NoteRow): ScratchpadNote {
-  return {
-    id: row.id,
-    title: row.title,
-    content: row.content,
-    updatedAt: row.updated_at,
-  };
-}
-
 function mapSession(row: SessionRow): StudySession {
   return {
     id: row.id,
     date: row.date,
     durationMinutes: row.duration_minutes,
     source: row.source,
+    taskId: row.task_id,
     completedAt: row.completed_at,
   };
 }
@@ -106,20 +91,11 @@ const updateGoalSchema = z.object({
   targetTasks: z.number().int().min(1).max(50),
 });
 
-const createNoteSchema = z.object({
-  title: z.string().trim().min(1).max(120).optional().default('Untitled note'),
-  content: z.string().max(100_000).optional().default(''),
-});
-
-const updateNoteSchema = z.object({
-  title: z.string().trim().min(1).max(120).optional(),
-  content: z.string().max(100_000).optional(),
-});
-
 const createSessionSchema = z.object({
   durationMinutes: z.number().int().min(1).max(480),
   source: z.enum(['pomodoro', 'manual']).optional().default('pomodoro'),
   date: z.string().regex(isoDateRegex).optional(),
+  taskId: z.string().nullable().optional().default(null),
 });
 
 export function createToolsRouter(db: Database.Database): Router {
@@ -247,88 +223,6 @@ export function createToolsRouter(db: Database.Database): Router {
     res.json(updated);
   });
 
-  // Scratchpad Notes
-  router.get('/notes', (_req, res) => {
-    let rows = db.prepare('SELECT * FROM notes ORDER BY updated_at DESC').all() as NoteRow[];
-
-    if (rows.length === 0) {
-      const id = crypto.randomUUID();
-      const now = new Date().toISOString();
-      const starter =
-        '# Study Scratchpad\n\nJot down lecture thoughts, equations, or questions here.\n\n- [ ] Review key concepts\n';
-      db.prepare('INSERT INTO notes (id, title, content, updated_at) VALUES (?, ?, ?, ?)').run(
-        id,
-        'Scratchpad',
-        starter,
-        now
-      );
-      rows = [{ id, title: 'Scratchpad', content: starter, updated_at: now }];
-    }
-
-    res.json(rows.map(mapNote));
-  });
-
-  router.post('/notes', validateBody(createNoteSchema), (req, res) => {
-    const body = req.body as z.infer<typeof createNoteSchema>;
-    const id = crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    db.prepare('INSERT INTO notes (id, title, content, updated_at) VALUES (?, ?, ?, ?)').run(
-      id,
-      body.title,
-      body.content,
-      now
-    );
-
-    const created: ScratchpadNote = {
-      id,
-      title: body.title,
-      content: body.content,
-      updatedAt: now,
-    };
-    res.status(201).json(created);
-  });
-
-  router.put('/notes/:id', validateBody(updateNoteSchema), (req, res) => {
-    const existing = db
-      .prepare('SELECT * FROM notes WHERE id = ?')
-      .get(req.params.id) as NoteRow | undefined;
-    if (!existing) {
-      res.status(404).json({ error: 'Note not found' });
-      return;
-    }
-
-    const body = req.body as z.infer<typeof updateNoteSchema>;
-    const now = new Date().toISOString();
-    const nextTitle = body.title ?? existing.title;
-    const nextContent = body.content ?? existing.content;
-
-    db.prepare('UPDATE notes SET title = ?, content = ?, updated_at = ? WHERE id = ?').run(
-      nextTitle,
-      nextContent,
-      now,
-      existing.id
-    );
-
-    res.json(
-      mapNote({
-        id: existing.id,
-        title: nextTitle,
-        content: nextContent,
-        updated_at: now,
-      })
-    );
-  });
-
-  router.delete('/notes/:id', (req, res) => {
-    const info = db.prepare('DELETE FROM notes WHERE id = ?').run(req.params.id);
-    if (info.changes === 0) {
-      res.status(404).json({ error: 'Note not found' });
-      return;
-    }
-    res.status(204).end();
-  });
-
   // Study Analytics
   router.post('/analytics/sessions', validateBody(createSessionSchema), (req, res) => {
     const body = req.body as z.infer<typeof createSessionSchema>;
@@ -337,18 +231,32 @@ export function createToolsRouter(db: Database.Database): Router {
     const now = new Date().toISOString();
 
     db.prepare(
-      `INSERT INTO study_sessions (id, date, duration_minutes, source, completed_at)
-       VALUES (?, ?, ?, ?, ?)`
-    ).run(id, date, body.durationMinutes, body.source, now);
+      `INSERT INTO study_sessions (id, date, duration_minutes, source, task_id, completed_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(id, date, body.durationMinutes, body.source, body.taskId, now);
 
     const row: SessionRow = {
       id,
       date,
       duration_minutes: body.durationMinutes,
       source: body.source,
+      task_id: body.taskId,
       completed_at: now,
     };
     res.status(201).json(mapSession(row));
+  });
+
+  router.get('/analytics/by-task', (_req, res) => {
+    const rows = db
+      .prepare(
+        'SELECT task_id, SUM(duration_minutes) AS minutes FROM study_sessions WHERE task_id IS NOT NULL GROUP BY task_id'
+      )
+      .all() as Array<{ task_id: string; minutes: number }>;
+    const map: Record<string, number> = {};
+    for (const r of rows) {
+      map[r.task_id] = r.minutes;
+    }
+    res.json(map);
   });
 
   router.get('/analytics/summary', (req, res) => {

@@ -10,6 +10,9 @@ export interface ShortcutHelpModalProps {
 const SHORTCUTS: Array<{ keys: string; description: string }> = [
   { keys: '?', description: 'Open or close keyboard shortcuts' },
   { keys: 'F', description: 'Toggle Focus Mode (hide dock & distractions)' },
+  { keys: 'T', description: 'Toggle Timetable widget' },
+  { keys: 'K', description: 'Toggle Tasks widget' },
+  { keys: 'N', description: 'Toggle Notes widget' },
   { keys: 'Esc', description: 'Close dialog or exit Focus Mode' },
   { keys: 'Space', description: 'Flip current vocabulary card (Review tab)' },
   { keys: '1 – 4', description: 'Rate card: Again / Hard / Good / Easy' },
@@ -17,8 +20,10 @@ const SHORTCUTS: Array<{ keys: string; description: string }> = [
 ];
 
 const FOCUS_WIDGET_OPTIONS: Array<{ id: WidgetId; label: string }> = [
+  { id: 'today', label: 'Today' },
   { id: 'clock', label: 'Clock' },
   { id: 'pomodoro', label: 'Focus Timer' },
+  { id: 'timetable', label: 'Timetable' },
   { id: 'vocab', label: 'Vocabulary SRS' },
   { id: 'todos', label: 'Daily To-Do' },
   { id: 'notes', label: 'Scratchpad Notes' },

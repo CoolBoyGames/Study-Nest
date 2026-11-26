@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { runMigrations } from './migrations.js';
 
 export const SCHEMA_VERSION = 1;
 
@@ -96,4 +97,6 @@ export function initSchema(db: Database.Database): void {
       new Date().toISOString()
     );
   }
+
+  runMigrations(db);
 }
