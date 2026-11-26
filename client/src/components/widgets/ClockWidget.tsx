@@ -37,21 +37,27 @@ export function ClockWidget() {
   const hourAngle = (hours24 % 12) * 30 + minutes * 0.5;
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-3">
       {clock.mode === 'digital' ? (
-        <div className="py-2 text-center">
-          <div className="tabular-nums font-heading text-[34px] font-semibold tracking-tight text-[var(--text)]">
+        <div className="py-1 text-center">
+          <div
+            style={{ fontSize: 'clamp(1.375rem, 13cqi, 4rem)' }}
+            className="tabular-nums font-heading font-semibold leading-none tracking-tight text-[var(--text)]"
+          >
             {formattedTime}
           </div>
           {clock.showDate && (
-            <p className="mt-1 text-sm text-[var(--text-muted)]">{formattedDate}</p>
+            <p className="mt-1.5 text-sm text-[var(--text-muted)]">{formattedDate}</p>
           )}
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2 py-1">
           <svg
             viewBox="0 0 120 120"
-            className="h-32 w-32"
+            style={{
+              width: 'clamp(5.25rem, 48cqi, 14rem)',
+              height: 'clamp(5.25rem, 48cqi, 14rem)',
+            }}
             role="img"
             aria-label={`Analog clock showing ${formattedTime}`}
           >
@@ -117,7 +123,7 @@ export function ClockWidget() {
         </div>
       )}
 
-      <div className="flex w-full items-center justify-center gap-1.5">
+      <div className="flex w-full flex-wrap items-center justify-center gap-1.5">
         <Button
           variant="outline"
           size="sm"

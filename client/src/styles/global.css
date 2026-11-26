@@ -93,3 +93,62 @@ h4,
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Disable selection and iframe hit-testing while dragging/resizing widgets */
+body.studynest-interacting,
+body.studynest-interacting * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+body.studynest-interacting iframe {
+  pointer-events: none !important;
+}
+
+body[data-resize-cursor='ns-resize'],
+body[data-resize-cursor='ns-resize'] * {
+  cursor: ns-resize !important;
+}
+
+body[data-resize-cursor='ew-resize'],
+body[data-resize-cursor='ew-resize'] * {
+  cursor: ew-resize !important;
+}
+
+body[data-resize-cursor='nwse-resize'],
+body[data-resize-cursor='nwse-resize'] * {
+  cursor: nwse-resize !important;
+}
+
+body[data-resize-cursor='nesw-resize'],
+body[data-resize-cursor='nesw-resize'] * {
+  cursor: nesw-resize !important;
+}
+
+/* Touch accessibility: enlarge resize hit targets to >= 40px on coarse pointers */
+@media (pointer: coarse) {
+  .resize-handle-corner {
+    width: 40px;
+    height: 40px;
+  }
+
+  .resize-handle-n {
+    height: 40px;
+    top: -16px;
+  }
+
+  .resize-handle-s {
+    height: 40px;
+    bottom: -16px;
+  }
+
+  .resize-handle-w {
+    width: 40px;
+    left: -16px;
+  }
+
+  .resize-handle-e {
+    width: 40px;
+    right: -16px;
+  }
+}

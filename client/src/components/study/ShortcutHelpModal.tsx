@@ -16,6 +16,7 @@ const SHORTCUTS: Array<{ keys: string; description: string }> = [
   { keys: 'Esc', description: 'Close dialog or exit Focus Mode' },
   { keys: 'Space', description: 'Flip current vocabulary card (Review tab)' },
   { keys: '1 – 4', description: 'Rate card: Again / Hard / Good / Easy' },
+  { keys: 'Arrows / Shift+Arrows', description: 'Resize focused widget handle (8px / 32px; Esc cancels, Shift+Drag disables snap)' },
   { keys: 'Alt + 1..9', description: 'Toggle widgets (Clock, Timer, Vocab, To-Do, Notes, Stats, Ambient, Spotify, Themes)' },
 ];
 

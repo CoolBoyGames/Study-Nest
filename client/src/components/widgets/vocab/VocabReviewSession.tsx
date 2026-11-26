@@ -200,7 +200,10 @@ export function VocabReviewSession({
           ))}
         </div>
 
-        <div className="font-heading text-[28px] font-semibold leading-tight text-[var(--text)]">
+        <div
+          style={{ fontSize: 'clamp(1.25rem, 8cqi, 2.5rem)' }}
+          className="font-heading font-semibold leading-tight text-[var(--text)]"
+        >
           {currentCard.word}
         </div>
 
@@ -222,7 +225,11 @@ export function VocabReviewSession({
       </button>
 
       {flipped ? (
-        <div className="grid grid-cols-4 gap-2" role="group" aria-label="Review rating">
+        <div
+          className="grid grid-cols-2 gap-2 @[340px]:grid-cols-4"
+          role="group"
+          aria-label="Review rating"
+        >
           {RATING_OPTIONS.map((opt) => {
             const days = currentCard.previews[opt.rating];
             const isAgain = opt.rating === 1;

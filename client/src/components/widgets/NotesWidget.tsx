@@ -24,6 +24,7 @@ import {
 } from '@studyspace/shared';
 import { notesApi, type NoteUpdatePayload } from '../../api/notes';
 import { plannerApi } from '../../api/planner';
+import { useContainerWidth } from '../../hooks/useContainerWidth';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { Button, EmptyState, IconButton, Input, Select, Skeleton, Tabs } from '../ui';
@@ -64,6 +65,9 @@ export function NotesWidget() {
   const [mode, setMode] = useState<EditorMode>(() =>
     typeof window !== 'undefined' && window.innerWidth < 640 ? 'write' : 'split'
   );
+  const [containerRef, containerWidth] = useContainerWidth(560);
+  const isCompactPane = containerWidth < 480;
+  const activeMode: EditorMode = isCompactPane && mode === 'split' ? 'write' : mode;
   const [templateKey, setTemplateKey] = useState<TemplateKey>('lecture');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [newNbOpen, setNewNbOpen] = useState(false);
@@ -383,10 +387,10 @@ export function NotesWidget() {
   const wordCount = bodyDraft.trim() ? bodyDraft.trim().split(/\s+/).length : 0;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={containerRef} className="flex flex-col gap-3">
       {/* Top search, filters & template creation */}
-      <div className="grid grid-cols-12 gap-1.5">
-        <div className="relative col-span-5">
+      <div className={`grid gap-1.5 ${isCompactPane ? 'grid-cols-2' : 'grid-cols-12'}`}>
+        <div className={`relative ${isCompactPane ? 'col-span-2' : 'col-span-5'}`}>
           <Input
             aria-label="Search notes (FTS5)"
             placeholder="Search notes…"
@@ -410,7 +414,7 @@ export function NotesWidget() {
           />
         </div>
 
-        <div className="col-span-3">
+        <div className={isCompactPane ? 'col-span-1' : 'col-span-3'}>
           <Select
             aria-label="Filter by notebook"
             value={notebookFilter}
@@ -431,7 +435,7 @@ export function NotesWidget() {
           />
         </div>
 
-        <div className="col-span-2">
+        <div className={isCompactPane ? 'col-span-1' : 'col-span-2'}>
           <Select
             aria-label="Note template"
             value={templateKey}
@@ -443,7 +447,7 @@ export function NotesWidget() {
           />
         </div>
 
-        <div className="col-span-2 flex justify-end gap-1">
+        <div className={`${isCompactPane ? 'col-span-2' : 'col-span-2'} flex justify-end gap-1`}>
           <IconButton label="New notebook" onClick={() => setNewNbOpen((v) => !v)}>
             <FolderPlus size={16} strokeWidth={1.5} />
           </IconButton>
@@ -510,9 +514,9 @@ export function NotesWidget() {
       </div>
 
       {/* Main split workspace: left list + right editor/preview */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
+      <div className={`grid gap-3 ${isCompactPane ? 'grid-cols-1' : 'grid-cols-12'}`}>
         {/* Note list */}
-        <div className="sm:col-span-4">
+        <div className={isCompactPane ? '' : 'col-span-4'}>
           {notes.length === 0 ? (
             <EmptyState
               message="No matching notes."
@@ -554,7 +558,7 @@ export function NotesWidget() {
         </div>
 
         {/* Editor & Preview */}
-        <div className="flex flex-col gap-2 sm:col-span-8">
+        <div className={`flex flex-col gap-2 ${isCompactPane ? '' : 'col-span-8'}`}>
           {activeNote ? (
             <>
               <div className="flex items-center gap-1.5">
@@ -653,18 +657,23 @@ export function NotesWidget() {
                   </IconButton>
                 </div>
 
-                <div className="w-40">
-                  <Tabs items={MODE_TABS} value={mode} onChange={setMode} ariaLabel="Note mode" />
+                <div className={isCompactPane ? 'w-32' : 'w-40'}>
+                  <Tabs
+                    items={isCompactPane ? MODE_TABS.filter((t) => t.id !== 'split') : MODE_TABS}
+                    value={activeMode}
+                    onChange={setMode}
+                    ariaLabel="Note mode"
+                  />
                 </div>
               </div>
 
               {/* Editor + Preview panes */}
               <div
-                className={`grid gap-2 ${mode === 'split' ? 'grid-cols-2' : 'grid-cols-1'}`}
+                className={`grid gap-2 ${activeMode === 'split' ? 'grid-cols-2' : 'grid-cols-1'}`}
                 onMouseUp={updateSelection}
                 onKeyUp={updateSelection}
               >
-                {mode !== 'preview' && (
+                {activeMode !== 'preview' && (
                   <textarea
                     ref={textareaRef}
                     aria-label="Note markdown body"
@@ -681,7 +690,7 @@ export function NotesWidget() {
                   />
                 )}
 
-                {mode !== 'write' && (
+                {activeMode !== 'write' && (
                   <div className="h-56 overflow-y-auto rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] p-2.5">
                     <MarkdownPreview markdown={bodyDraft} />
                   </div>

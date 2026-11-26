@@ -12,6 +12,7 @@ import {
 } from '@studyspace/shared';
 import { plannerApi, type CoursePayload, type EventPayload } from '../../api/planner';
 import { tasksApi } from '../../api/tasks';
+import { useContainerWidth } from '../../hooks/useContainerWidth';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { Button, IconButton, Select, Skeleton, Tabs } from '../ui';
@@ -52,6 +53,7 @@ export function TimetableWidget() {
   const [isNarrow, setIsNarrow] = useState(
     () => typeof window !== 'undefined' && window.innerWidth < 640
   );
+  const [containerRef, containerWidth] = useContainerWidth(640);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<TimetableEvent | null>(null);
@@ -118,7 +120,8 @@ export function TimetableWidget() {
 
   const todayIso = getTodayIsoDate();
   const weekRange = getWeekRangeIso(anchorDate, semester.weekStart);
-  const activeView: TimetableView = isNarrow && view === 'week' ? 'day' : view;
+  const compactMode = isNarrow || containerWidth < 520;
+  const activeView: TimetableView = compactMode && view === 'week' ? 'day' : view;
   const visibleDates = activeView === 'day' ? [anchorDate] : weekRange.dates;
 
   const rangeStart = activeView === 'day' ? anchorDate : weekRange.startIso;
@@ -223,7 +226,7 @@ export function TimetableWidget() {
   const stepDays = activeView === 'day' ? 1 : 7;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={containerRef} className="flex flex-col gap-3">
       <NextUpBar events={events} courses={courses} semester={semester} />
 
       {/* Controls bar */}
@@ -272,7 +275,7 @@ export function TimetableWidget() {
       </div>
 
       <Tabs
-        items={isNarrow ? VIEW_TABS.filter((t) => t.id !== 'week') : VIEW_TABS}
+        items={compactMode ? VIEW_TABS.filter((t) => t.id !== 'week') : VIEW_TABS}
         value={activeView}
         onChange={setView}
         ariaLabel="Timetable view"
@@ -300,7 +303,7 @@ export function TimetableWidget() {
             onSelectOccurrence={handleSelectOccurrence}
             onMoveOrResizeEvent={(id, patch) => void handleMoveOrResize(id, patch)}
           />
-          {isNarrow && (
+          {compactMode && (
             <div className="border-t border-[var(--border)] pt-2">
               <TimetableAgenda
                 occurrences={occurrences}

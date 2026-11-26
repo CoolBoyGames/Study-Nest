@@ -197,7 +197,10 @@ export function PomodoroWidget() {
       )}
 
       <div className="flex flex-col items-center gap-2 py-1">
-        <div className="tabular-nums font-heading text-[40px] font-semibold leading-none text-[var(--text)]">
+        <div
+          style={{ fontSize: 'clamp(1.75rem, 15cqi, 4.25rem)' }}
+          className="tabular-nums font-heading font-semibold leading-none text-[var(--text)]"
+        >
           {formatted}
         </div>
         <span className="text-xs text-[var(--text-muted)]">

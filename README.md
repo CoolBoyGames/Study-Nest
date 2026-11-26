@@ -44,7 +44,7 @@ This repo includes [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml
 - **Spotify Embed:** Paste any Spotify playlist, album, track, episode, or show URL/URI; remembers the last link.
 - **Ambient Sounds:** Soft rain, warm cafe, and white noise with individual play/pause and volume sliders backed by local looping WAV audio.
 - **Themes:** 5 instant CSS-variable themes (Mild Blue default, Sage, Dusk, Paper Light, Midnight).
-- **Widget Window System:** Frosted-glass panels with drag-and-drop (8px grid snap, viewport clamping), minimize/close, bottom dock, responsive tablet/mobile layouts, and `localStorage` persistence.
+- **Widget Window System:** Frosted-glass panels with drag-and-drop and 8-handle resizing (8px grid snap / `Shift` to unsnap, double-click handle to reset, viewport clamping, `Arrow` / `Shift+Arrow` keyboard resize, content-responsive layouts), minimize/close, bottom dock, responsive tablet/mobile layouts, and `localStorage` persistence.
 
 ### Phase 2 — Spaced-Repetition Vocabulary (Implemented)
 - **Decks & Cards:** Create/delete decks, quick-add/edit/delete cards (`word`, `meaning`, `partOfSpeech`, `example`, `notes`, `tags`), and live search.

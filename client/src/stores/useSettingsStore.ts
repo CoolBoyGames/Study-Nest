@@ -10,6 +10,11 @@ import type {
   WidgetId,
   WidgetLayout,
 } from '@studyspace/shared';
+import {
+  createDefaultWidgetsMap,
+  WIDGET_REGISTRY,
+} from '../constants/widgetRegistry';
+import { validateWidgetLayout } from '../utils/geometry';
 import { useToastStore } from './useToastStore';
 
 const STORAGE_KEY = 'studynest:settings:v1';
@@ -27,91 +32,7 @@ interface PersistedSettings {
   semester: SemesterSettings;
 }
 
-const DEFAULT_WIDGETS: Record<WidgetId, WidgetLayout> = {
-  today: { id: 'today', visible: false, minimized: false, x: 384, y: 32, width: 360, zIndex: 21 },
-  clock: { id: 'clock', visible: true, minimized: false, x: 32, y: 32, width: 280, zIndex: 11 },
-  pomodoro: {
-    id: 'pomodoro',
-    visible: true,
-    minimized: false,
-    x: 32,
-    y: 232,
-    width: 320,
-    zIndex: 12,
-  },
-  ambient: {
-    id: 'ambient',
-    visible: false,
-    minimized: false,
-    x: 384,
-    y: 32,
-    width: 320,
-    zIndex: 13,
-  },
-  spotify: {
-    id: 'spotify',
-    visible: false,
-    minimized: false,
-    x: 384,
-    y: 320,
-    width: 344,
-    zIndex: 14,
-  },
-  appearance: {
-    id: 'appearance',
-    visible: false,
-    minimized: false,
-    x: 752,
-    y: 32,
-    width: 360,
-    zIndex: 15,
-  },
-  vocab: {
-    id: 'vocab',
-    visible: false,
-    minimized: false,
-    x: 744,
-    y: 32,
-    width: 440,
-    zIndex: 16,
-  },
-  todos: {
-    id: 'todos',
-    visible: false,
-    minimized: false,
-    x: 384,
-    y: 32,
-    width: 344,
-    zIndex: 17,
-  },
-  notes: {
-    id: 'notes',
-    visible: false,
-    minimized: false,
-    x: 384,
-    y: 360,
-    width: 580,
-    zIndex: 18,
-  },
-  analytics: {
-    id: 'analytics',
-    visible: false,
-    minimized: false,
-    x: 760,
-    y: 32,
-    width: 424,
-    zIndex: 19,
-  },
-  timetable: {
-    id: 'timetable',
-    visible: false,
-    minimized: false,
-    x: 368,
-    y: 32,
-    width: 680,
-    zIndex: 20,
-  },
-};
+const DEFAULT_WIDGETS = createDefaultWidgetsMap();
 
 const DEFAULT_PERSISTED: PersistedSettings = {
   version: 1,
@@ -156,12 +77,29 @@ const DEFAULT_PERSISTED: PersistedSettings = {
   },
 };
 
+function validateAllWidgets(
+  rawWidgets: Partial<Record<WidgetId, unknown>> | undefined,
+  vw = typeof window !== 'undefined' ? window.innerWidth : 1280,
+  vh = typeof window !== 'undefined' ? window.innerHeight : 800
+): Record<WidgetId, WidgetLayout> {
+  const ids = Object.keys(DEFAULT_WIDGETS) as WidgetId[];
+  const result = {} as Record<WidgetId, WidgetLayout>;
+  for (const id of ids) {
+    result[id] = validateWidgetLayout(rawWidgets?.[id], DEFAULT_WIDGETS[id], WIDGET_REGISTRY[id], vw, vh);
+  }
+  return result;
+}
+
 function loadPersisted(): PersistedSettings {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_PERSISTED;
+    if (!raw) {
+      return { ...DEFAULT_PERSISTED, widgets: validateAllWidgets(undefined) };
+    }
     const parsed = JSON.parse(raw) as Partial<PersistedSettings>;
-    if (parsed.version !== 1) return DEFAULT_PERSISTED;
+    if (parsed.version !== 1) {
+      return { ...DEFAULT_PERSISTED, widgets: validateAllWidgets(undefined) };
+    }
 
     return {
       version: 1,
@@ -171,19 +109,7 @@ function loadPersisted(): PersistedSettings {
       pomodoro: { ...DEFAULT_PERSISTED.pomodoro, ...parsed.pomodoro },
       spotifyUrl: typeof parsed.spotifyUrl === 'string' ? parsed.spotifyUrl : '',
       ambientVolumes: { ...DEFAULT_PERSISTED.ambientVolumes, ...parsed.ambientVolumes },
-      widgets: {
-        today: { ...DEFAULT_WIDGETS.today, ...parsed.widgets?.today },
-        clock: { ...DEFAULT_WIDGETS.clock, ...parsed.widgets?.clock },
-        pomodoro: { ...DEFAULT_WIDGETS.pomodoro, ...parsed.widgets?.pomodoro },
-        ambient: { ...DEFAULT_WIDGETS.ambient, ...parsed.widgets?.ambient },
-        spotify: { ...DEFAULT_WIDGETS.spotify, ...parsed.widgets?.spotify },
-        appearance: { ...DEFAULT_WIDGETS.appearance, ...parsed.widgets?.appearance },
-        vocab: { ...DEFAULT_WIDGETS.vocab, ...parsed.widgets?.vocab },
-        todos: { ...DEFAULT_WIDGETS.todos, ...parsed.widgets?.todos },
-        notes: { ...DEFAULT_WIDGETS.notes, ...parsed.widgets?.notes },
-        analytics: { ...DEFAULT_WIDGETS.analytics, ...parsed.widgets?.analytics },
-        timetable: { ...DEFAULT_WIDGETS.timetable, ...parsed.widgets?.timetable },
-      },
+      widgets: validateAllWidgets(parsed.widgets),
       focusWidgetIds:
         Array.isArray(parsed.focusWidgetIds) && parsed.focusWidgetIds.length > 0
           ? parsed.focusWidgetIds
@@ -191,7 +117,7 @@ function loadPersisted(): PersistedSettings {
       semester: { ...DEFAULT_PERSISTED.semester, ...parsed.semester },
     };
   } catch {
-    return DEFAULT_PERSISTED;
+    return { ...DEFAULT_PERSISTED, widgets: validateAllWidgets(undefined) };
   }
 }
 
@@ -256,6 +182,7 @@ interface SettingsStore {
   setWidgetVisible: (id: WidgetId, visible: boolean) => void;
   toggleMinimizeWidget: (id: WidgetId) => void;
   moveWidget: (id: WidgetId, x: number, y: number) => void;
+  resizeWidget: (id: WidgetId, x: number, y: number, width: number, height: number) => void;
   bringToFront: (id: WidgetId) => void;
   resetLayout: () => void;
   setActiveMobileWidget: (id: WidgetId | null) => void;
@@ -395,6 +322,16 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     schedulePersist(get());
   },
 
+  resizeWidget: (id, x, y, width, height) => {
+    set((s) => ({
+      widgets: {
+        ...s.widgets,
+        [id]: { ...s.widgets[id], x, y, width, height },
+      },
+    }));
+    schedulePersist(get());
+  },
+
   bringToFront: (id) => {
     set((s) => {
       const maxZ = Math.max(...Object.values(s.widgets).map((w) => w.zIndex));
@@ -410,7 +347,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   resetLayout: () => {
-    set({ widgets: DEFAULT_WIDGETS, activeMobileWidget: 'clock' });
+    set({ widgets: validateAllWidgets(undefined), activeMobileWidget: 'clock' });
     schedulePersist(get());
   },
 

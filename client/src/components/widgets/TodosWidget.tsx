@@ -399,7 +399,7 @@ export function TodosWidget() {
       <Tabs items={VIEW_TABS} value={view} onChange={setView} ariaLabel="Task views" />
 
       {/* Search + filters */}
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5 @[320px]:grid-cols-4">
         <div className="relative col-span-2">
           <Input
             aria-label="Search tasks"

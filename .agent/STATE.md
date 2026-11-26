@@ -1,7 +1,7 @@
 # STATE
-Phase: 4 - Planner suite (4a, 4b, 4c, 4d Complete)
-Done: Phases 1-3 + 4a (Courses, Timetable, ICS, Next up), 4b (Tasks, Subtasks, parseQuickAdd, Recurring, Undo, Pomodoro link), 4c (Notes FTS5, Notebooks/Tags, Templates, Toolbar, Selection->Vocab), 4d (Today widget, Shared Course selector, T/K/N shortcuts, Focus mode)
+Phase: 4 + Resizable Widgets (Complete)
+Done: Phases 1-4 + Resizable WidgetWindow (8 handles, rAF 60fps resize, single size registry, aspect lock, Shift/Esc/DblClick/Arrows, ResizeObserver/container-query adaptation, persisted validation)
 In progress: None
 Known issues: None
 Commands: dev=npm.cmd run dev test=npm.cmd test build=npm.cmd run build
-Decisions: Migrations v2-v4 in server/src/db/migrations.ts, pure planner logic in /shared, staticStore mirrors all Phase 4 features for GitHub Pages
+Decisions: Single widget registry in client/src/constants/widgetRegistry.ts, pure computeResize & validateWidgetLayout in client/src/utils/geometry.ts, trailing-throttled useContainerWidth hook
