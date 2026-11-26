@@ -1,7 +1,15 @@
+import type { AnimatedBgId } from '@studyspace/shared';
+
 export interface GradientPreset {
   id: string;
   label: string;
   css: string;
+  preview: string;
+}
+
+export interface AnimatedPreset {
+  id: AnimatedBgId;
+  label: string;
   preview: string;
 }
 
@@ -41,5 +49,43 @@ export const GRADIENT_PRESETS: GradientPreset[] = [
     label: 'Fjord Horizon',
     css: 'linear-gradient(145deg, #cfe0f5 0%, #e4edf8 48%, #d4e3e0 100%)',
     preview: 'linear-gradient(145deg, #cfe0f5, #d4e3e0)',
+  },
+];
+
+export const ANIMATED_PRESETS: AnimatedPreset[] = [
+  {
+    id: 'rain-glass',
+    label: 'Rain on Glass',
+    preview: 'linear-gradient(160deg, #27384c 0%, #4b6584 55%, #1e293b 100%)',
+  },
+  {
+    id: 'aurora',
+    label: 'Aurora Glow',
+    preview: 'linear-gradient(135deg, #162447 0%, #2b6b70 45%, #5b8dd6 100%)',
+  },
+  {
+    id: 'clouds',
+    label: 'Drifting Clouds',
+    preview: 'linear-gradient(160deg, #b8d3f2 0%, #e6f0fc 55%, #cddff3 100%)',
+  },
+  {
+    id: 'starfield',
+    label: 'Starfield',
+    preview: 'radial-gradient(circle at 30% 30%, #1c2947 0%, #0c1220 75%)',
+  },
+  {
+    id: 'bokeh',
+    label: 'Soft Bokeh',
+    preview: 'radial-gradient(circle at 60% 40%, #3a4668 0%, #252b42 75%)',
+  },
+  {
+    id: 'snowfall',
+    label: 'Snowfall',
+    preview: 'linear-gradient(165deg, #4b617b 0%, #7d96b3 60%, #34475e 100%)',
+  },
+  {
+    id: 'gradient-mesh',
+    label: 'Gradient Mesh',
+    preview: 'linear-gradient(135deg, #cfdcf5 0%, #dbece5 50%, #e8dff5 100%)',
   },
 ];

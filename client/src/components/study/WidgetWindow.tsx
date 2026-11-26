@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { GripHorizontal, Maximize2, Minimize2, X } from 'lucide-react';
 import type { WidgetId } from '@studyspace/shared';
 import { createDefaultWidgetLayout, WIDGET_REGISTRY } from '../../constants/widgetRegistry';
+import { useT } from '../../i18n';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import {
   clampWidgetPosition,
@@ -128,6 +129,7 @@ export function WidgetWindow({
   layoutMode,
   forceVisible = false,
 }: WidgetWindowProps) {
+  const { t } = useT();
   const widget = useSettingsStore((s) => s.widgets[id]);
   const clockMode = useSettingsStore((s) => s.clock.mode);
   const moveWidget = useSettingsStore((s) => s.moveWidget);
@@ -524,7 +526,11 @@ export function WidgetWindow({
           <div className="flex items-center gap-1">
             {layoutMode !== 'sheet' && (
               <IconButton
-                label={widget.minimized ? `Expand ${title}` : `Minimize ${title}`}
+                label={
+                  widget.minimized
+                    ? t('window.expand', { title })
+                    : t('window.minimize', { title })
+                }
                 onClick={() => toggleMinimizeWidget(id)}
               >
                 {widget.minimized ? (
@@ -534,14 +540,20 @@ export function WidgetWindow({
                 )}
               </IconButton>
             )}
-            <IconButton label={`Close ${title}`} onClick={() => setWidgetVisible(id, false)}>
+            <IconButton label={t('window.close', { title })} onClick={() => setWidgetVisible(id, false)}>
               <X size={16} strokeWidth={1.5} />
             </IconButton>
           </div>
         </div>
 
         {(!widget.minimized || layoutMode === 'sheet') && (
-          <div className="min-h-0 flex-1 overflow-y-auto p-[var(--space-4)] [container-type:inline-size]">
+          <div
+            className={`min-h-0 flex-1 [container-type:inline-size] ${
+              id === 'spotify'
+                ? 'flex flex-col overflow-hidden p-0'
+                : 'overflow-y-auto p-[var(--space-4)]'
+            }`}
+          >
             {children}
           </div>
         )}
@@ -554,7 +566,7 @@ export function WidgetWindow({
             key={cfg.handle}
             role="separator"
             tabIndex={0}
-            aria-label={cfg.label}
+            aria-label={t('window.resizeHandle', { dir: t(`window.dir.${cfg.handle}`) })}
             aria-orientation={cfg.orientation}
             data-resize-handle={cfg.handle}
             onPointerDown={(e) => handleResizePointerDown(e, cfg)}

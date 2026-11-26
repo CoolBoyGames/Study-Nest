@@ -25,6 +25,7 @@ import {
 import { notesApi, type NoteUpdatePayload } from '../../api/notes';
 import { plannerApi } from '../../api/planner';
 import { useContainerWidth } from '../../hooks/useContainerWidth';
+import { useT } from '../../i18n';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { Button, EmptyState, IconButton, Input, Select, Skeleton, Tabs } from '../ui';
@@ -33,13 +34,8 @@ import { MarkdownPreview } from './notes/MarkdownPreview';
 type EditorMode = 'split' | 'write' | 'preview';
 type TemplateKey = keyof typeof NOTE_TEMPLATES;
 
-const MODE_TABS: { id: EditorMode; label: string }[] = [
-  { id: 'split', label: 'Split' },
-  { id: 'write', label: 'Edit' },
-  { id: 'preview', label: 'Preview' },
-];
-
 export function NotesWidget() {
+  const { t } = useT();
   const pushToast = useToastStore((s) => s.push);
   const setVocabQuickAddDraft = useSettingsStore((s) => s.setVocabQuickAddDraft);
   const setWidgetVisible = useSettingsStore((s) => s.setWidgetVisible);
@@ -392,8 +388,8 @@ export function NotesWidget() {
       <div className={`grid gap-1.5 ${isCompactPane ? 'grid-cols-2' : 'grid-cols-12'}`}>
         <div className={`relative ${isCompactPane ? 'col-span-2' : 'col-span-5'}`}>
           <Input
-            aria-label="Search notes (FTS5)"
-            placeholder="Search notes…"
+            aria-label={t('notes.searchPlaceholder')}
+            placeholder={t('notes.searchPlaceholder')}
             value={searchQ}
             onChange={(e) => {
               const q = e.target.value;
@@ -429,7 +425,7 @@ export function NotesWidget() {
               });
             }}
             options={[
-              { value: '', label: 'All notebooks' },
+              { value: '', label: t('notes.allNotebooks') },
               ...notebooks.map((nb) => ({ value: nb.id, label: nb.name })),
             ]}
           />
@@ -489,12 +485,12 @@ export function NotesWidget() {
             });
           }}
           options={[
-            { value: '', label: 'All courses' },
+            { value: '', label: t('notes.allCourses') },
             ...courses.map((c) => ({ value: c.id, label: c.code || c.name })),
           ]}
         />
         <Select
-          aria-label="Filter notes by tag"
+          aria-label={t('notes.allTags')}
           value={tagFilter}
           onChange={(e) => {
             const tag = e.target.value;
@@ -507,8 +503,8 @@ export function NotesWidget() {
             });
           }}
           options={[
-            { value: '', label: 'All tags' },
-            ...tagsList.map((t) => ({ value: t.name, label: `#${t.name}` })),
+            { value: '', label: t('notes.allTags') },
+            ...tagsList.map((tagItem) => ({ value: tagItem.name, label: `#${tagItem.name}` })),
           ]}
         />
       </div>
@@ -519,8 +515,8 @@ export function NotesWidget() {
         <div className={isCompactPane ? '' : 'col-span-4'}>
           {notes.length === 0 ? (
             <EmptyState
-              message="No matching notes."
-              actionLabel="New note"
+              message={t('notes.empty')}
+              actionLabel={t('notes.newNote')}
               onAction={() => void handleCreateNote('blank')}
             />
           ) : (
@@ -659,10 +655,21 @@ export function NotesWidget() {
 
                 <div className={isCompactPane ? 'w-32' : 'w-40'}>
                   <Tabs
-                    items={isCompactPane ? MODE_TABS.filter((t) => t.id !== 'split') : MODE_TABS}
+                    items={
+                      isCompactPane
+                        ? [
+                            { id: 'write' as EditorMode, label: t('notes.edit') },
+                            { id: 'preview' as EditorMode, label: t('notes.preview') },
+                          ]
+                        : [
+                            { id: 'split' as EditorMode, label: t('notes.split') },
+                            { id: 'write' as EditorMode, label: t('notes.edit') },
+                            { id: 'preview' as EditorMode, label: t('notes.preview') },
+                          ]
+                    }
                     value={activeMode}
                     onChange={setMode}
-                    ariaLabel="Note mode"
+                    ariaLabel={t('notes.modeAria')}
                   />
                 </div>
               </div>
@@ -676,7 +683,7 @@ export function NotesWidget() {
                 {activeMode !== 'preview' && (
                   <textarea
                     ref={textareaRef}
-                    aria-label="Note markdown body"
+                    aria-label={t('notes.bodyPlaceholder')}
                     rows={10}
                     value={bodyDraft}
                     onBlur={() => void flushPendingSave()}
@@ -685,7 +692,7 @@ export function NotesWidget() {
                       setBodyDraft(nextBody);
                       scheduleAutosave(activeNote.id, { body: nextBody });
                     }}
-                    placeholder="Write markdown notes…"
+                    placeholder={t('notes.bodyPlaceholder')}
                     className="h-56 w-full resize-y rounded-[var(--radius-sm)] border border-[var(--border-control)] bg-[var(--surface)] p-2.5 font-mono text-xs leading-relaxed text-[var(--text)] placeholder:text-[var(--text-muted)]"
                   />
                 )}
@@ -700,12 +707,12 @@ export function NotesWidget() {
               {/* Footer: word count, autosave status, selection -> vocab */}
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
                 <div className="flex items-center gap-3">
-                  <span className="tabular-nums">{wordCount} words</span>
+                  <span className="tabular-nums">{t('notes.words', { count: wordCount })}</span>
                   <span aria-live="polite">
                     {saveStatus === 'saving'
-                      ? 'Saving…'
+                      ? t('notes.saving')
                       : saveStatus === 'saved'
-                        ? 'Saved'
+                        ? t('notes.saved')
                         : ''}
                   </span>
                 </div>

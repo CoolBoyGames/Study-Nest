@@ -24,18 +24,11 @@ import {
 import { plannerApi } from '../../api/planner';
 import { tasksApi, type UpdateTaskPayload } from '../../api/tasks';
 import { toolsApi } from '../../api/tools';
+import { useT } from '../../i18n';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { Button, EmptyState, IconButton, Input, ProgressBar, Select, Skeleton, Tabs } from '../ui';
 import { TaskEditorModal } from './todos/TaskEditorModal';
-
-const VIEW_TABS: { id: TaskViewMode; label: string }[] = [
-  { id: 'today', label: 'Today' },
-  { id: 'upcoming', label: 'Upcoming' },
-  { id: 'overdue', label: 'Overdue' },
-  { id: 'done', label: 'Done' },
-  { id: 'course', label: 'All' },
-];
 
 const PRIORITY_STYLE: Record<TaskPriority, string> = {
   high: 'text-[var(--warning)] border-[var(--warning)]',
@@ -44,6 +37,7 @@ const PRIORITY_STYLE: Record<TaskPriority, string> = {
 };
 
 export function TodosWidget() {
+  const { t } = useT();
   const pushToast = useToastStore((s) => s.push);
   const activeTask = useSettingsStore((s) => s.activeTask);
   const setActiveTask = useSettingsStore((s) => s.setActiveTask);
@@ -350,13 +344,18 @@ export function TodosWidget() {
     <div className="flex flex-col gap-3">
       {/* Daily goals */}
       <div className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] p-2.5">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)]">
-            <Target size={14} strokeWidth={1.5} />
-            Goals ({doneTodayCount}/{targetTasks} tasks · {todayMinutes}/{targetMinutes}m)
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex min-w-0 items-center gap-1.5 truncate text-xs font-medium text-[var(--text-muted)]">
+            <Target size={14} strokeWidth={1.5} className="shrink-0" />
+            {t('todos.goals', {
+              done: doneTodayCount,
+              targetTasks,
+              minutes: todayMinutes,
+              targetMinutes,
+            })}
           </span>
           <Button variant="ghost" size="sm" onClick={() => setEditingGoal((v) => !v)}>
-            {editingGoal ? 'Done' : 'Edit'}
+            {editingGoal ? t('common.done') : t('common.edit')}
           </Button>
         </div>
         {editingGoal ? (
@@ -396,14 +395,25 @@ export function TodosWidget() {
       </div>
 
       {/* Views */}
-      <Tabs items={VIEW_TABS} value={view} onChange={setView} ariaLabel="Task views" />
+      <Tabs
+        items={[
+          { id: 'today', label: t('todos.viewToday') },
+          { id: 'upcoming', label: t('todos.viewUpcoming') },
+          { id: 'overdue', label: t('todos.viewOverdue') },
+          { id: 'done', label: t('todos.viewDone') },
+          { id: 'course', label: t('todos.viewAll') },
+        ]}
+        value={view}
+        onChange={setView}
+        ariaLabel="Task views"
+      />
 
       {/* Search + filters */}
       <div className="grid grid-cols-2 gap-1.5 @[320px]:grid-cols-4">
         <div className="relative col-span-2">
           <Input
-            aria-label="Search tasks"
-            placeholder="Search…"
+            aria-label={t('common.search')}
+            placeholder={t('todos.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-8"
@@ -450,13 +460,13 @@ export function TodosWidget() {
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <Input
-              aria-label="New task"
-              placeholder='Quick add: "Essay !high #cs201 tomorrow"'
+              aria-label={t('todos.addBtn')}
+              placeholder={t('todos.quickPlaceholder')}
               value={quickInput}
               onChange={(e) => setQuickInput(e.target.value)}
             />
           </div>
-          <IconButton type="submit" label="Add task">
+          <IconButton type="submit" label={t('todos.addBtn')}>
             <Plus size={18} strokeWidth={1.5} />
           </IconButton>
         </div>

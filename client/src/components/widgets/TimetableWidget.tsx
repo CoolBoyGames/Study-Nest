@@ -13,6 +13,7 @@ import {
 import { plannerApi, type CoursePayload, type EventPayload } from '../../api/planner';
 import { tasksApi } from '../../api/tasks';
 import { useContainerWidth } from '../../hooks/useContainerWidth';
+import { useT } from '../../i18n';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { Button, IconButton, Select, Skeleton, Tabs } from '../ui';
@@ -27,13 +28,8 @@ import { TimetableWeekGrid } from './timetable/TimetableWeekGrid';
 
 type TimetableView = 'week' | 'day' | 'agenda';
 
-const VIEW_TABS: { id: TimetableView; label: string }[] = [
-  { id: 'week', label: 'Week' },
-  { id: 'day', label: 'Day' },
-  { id: 'agenda', label: 'Agenda' },
-];
-
 export function TimetableWidget() {
+  const { t } = useT();
   const semester = useSettingsStore((s) => s.semester);
   const updateSemester = useSettingsStore((s) => s.updateSemester);
   const selectedCourseId = useSettingsStore((s) => s.selectedCourseId);
@@ -224,6 +220,11 @@ export function TimetableWidget() {
   }
 
   const stepDays = activeView === 'day' ? 1 : 7;
+  const viewTabs: { id: TimetableView; label: string }[] = [
+    { id: 'week', label: t('timetable.week') },
+    { id: 'day', label: t('timetable.day') },
+    { id: 'agenda', label: t('timetable.agenda') },
+  ];
 
   return (
     <div ref={containerRef} className="flex flex-col gap-3">
@@ -233,16 +234,16 @@ export function TimetableWidget() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1">
           <IconButton
-            label="Previous"
+            label={t('timetable.prev')}
             onClick={() => setAnchorDate((d) => addDaysIso(d, -stepDays))}
           >
             <ChevronLeft size={16} strokeWidth={1.5} />
           </IconButton>
           <Button variant="outline" size="sm" onClick={() => setAnchorDate(todayIso)}>
-            Today
+            {t('timetable.today')}
           </Button>
           <IconButton
-            label="Next"
+            label={t('timetable.next')}
             onClick={() => setAnchorDate((d) => addDaysIso(d, stepDays))}
           >
             <ChevronRight size={16} strokeWidth={1.5} />
@@ -252,33 +253,33 @@ export function TimetableWidget() {
         <div className="flex items-center gap-1">
           <div className="w-32">
             <Select
-              aria-label="Filter timetable by course"
+              aria-label={t('timetable.filterCourse')}
               value={selectedCourseId}
               onChange={(e) => setSelectedCourseId(e.target.value)}
               options={[
-                { value: '', label: 'All courses' },
+                { value: '', label: t('today.allCourses') },
                 ...courses.map((c) => ({ value: c.id, label: c.code || c.name })),
               ]}
             />
           </div>
-          <IconButton label="Manage courses" onClick={() => setCoursesModalOpen(true)}>
+          <IconButton label={t('timetable.manageCourses')} onClick={() => setCoursesModalOpen(true)}>
             <BookMarked size={16} strokeWidth={1.5} />
           </IconButton>
-          <IconButton label="Semester & ICS settings" onClick={() => setSettingsModalOpen(true)}>
+          <IconButton label={t('timetable.settings')} onClick={() => setSettingsModalOpen(true)}>
             <Settings2 size={16} strokeWidth={1.5} />
           </IconButton>
           <Button size="sm" onClick={() => handleOpenCreate()}>
             <Plus size={15} strokeWidth={1.5} />
-            Event
+            {t('timetable.addEvent')}
           </Button>
         </div>
       </div>
 
       <Tabs
-        items={compactMode ? VIEW_TABS.filter((t) => t.id !== 'week') : VIEW_TABS}
+        items={compactMode ? viewTabs.filter((tab) => tab.id !== 'week') : viewTabs}
         value={activeView}
         onChange={setView}
-        ariaLabel="Timetable view"
+        ariaLabel={t('timetable.viewAria')}
       />
 
       {activeView === 'agenda' ? (

@@ -182,34 +182,62 @@ export function VocabReviewSession({
         type="button"
         onClick={toggleFlip}
         aria-label={flipped ? 'Hide card answer' : 'Reveal card answer'}
-        className="flex min-h-48 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] p-5 text-center transition-transform duration-150 hover:border-[var(--primary)]"
+        className="card-flip-scene group w-full cursor-pointer text-center"
       >
-        <div className="flex flex-wrap items-center justify-center gap-1.5">
-          {currentCard.partOfSpeech && (
-            <span className="rounded-full border border-[var(--border)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--text-muted)]">
-              {currentCard.partOfSpeech}
-            </span>
-          )}
-          {currentCard.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full bg-[var(--surface-hover)] px-2 py-0.5 text-[11px] text-[var(--text-muted)]"
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-
         <div
-          style={{ fontSize: 'clamp(1.25rem, 8cqi, 2.5rem)' }}
-          className="font-heading font-semibold leading-tight text-[var(--text)]"
+          className={`card-flip-inner relative grid min-h-48 w-full ${
+            flipped ? 'card-flip-flipped' : ''
+          }`}
         >
-          {currentCard.word}
-        </div>
+          <div
+            className={`card-flip-face col-start-1 row-start-1 flex flex-col items-center justify-center gap-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] p-5 transition-colors duration-150 group-hover:border-[var(--primary)] ${
+              flipped ? 'pointer-events-none' : ''
+            }`}
+          >
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              {currentCard.partOfSpeech && (
+                <span className="rounded-full border border-[var(--border)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--text-muted)]">
+                  {currentCard.partOfSpeech}
+                </span>
+              )}
+              {currentCard.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-[var(--surface-hover)] px-2 py-0.5 text-[11px] text-[var(--text-muted)]"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
 
-        {flipped ? (
-          <div className="animate-fade-in flex w-full flex-col gap-2 border-t border-[var(--border)] pt-3">
-            <p className="text-base font-medium text-[var(--text)]">{currentCard.meaning}</p>
+            <div
+              style={{ fontSize: 'clamp(1.25rem, 8cqi, 2.5rem)' }}
+              className="font-heading font-semibold leading-tight text-[var(--text)]"
+            >
+              {currentCard.word}
+            </div>
+
+            <span className="text-xs text-[var(--text-muted)]">
+              Press{' '}
+              <kbd className="rounded border border-[var(--border-control)] px-1.5 py-0.5 font-mono text-[11px]">
+                Space
+              </kbd>{' '}
+              or click to reveal
+            </span>
+          </div>
+
+          <div
+            className={`card-flip-face card-flip-back col-start-1 row-start-1 flex flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--primary)]/50 bg-[var(--surface)] p-5 ${
+              flipped ? '' : 'pointer-events-none'
+            }`}
+          >
+            <div
+              style={{ fontSize: 'clamp(1.1rem, 6cqi, 1.75rem)' }}
+              className="font-heading font-semibold text-[var(--text)]"
+            >
+              {currentCard.word}
+            </div>
+            <p className="text-base font-medium text-[var(--primary)]">{currentCard.meaning}</p>
             {currentCard.example && (
               <p className="text-sm italic text-[var(--text-muted)]">“{currentCard.example}”</p>
             )}
@@ -217,11 +245,7 @@ export function VocabReviewSession({
               <p className="text-xs text-[var(--text-muted)]">Note: {currentCard.notes}</p>
             )}
           </div>
-        ) : (
-          <span className="text-xs text-[var(--text-muted)]">
-            Press <kbd className="rounded border border-[var(--border-control)] px-1.5 py-0.5 font-mono text-[11px]">Space</kbd> or click to reveal
-          </span>
-        )}
+        </div>
       </button>
 
       {flipped ? (

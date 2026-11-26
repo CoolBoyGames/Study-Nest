@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Calendar, Clock as ClockIcon } from 'lucide-react';
+import { useT } from '../../i18n';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { Button } from '../ui';
 
 export function ClockWidget() {
+  const { t, formatDate, formatTime } = useT();
   const clock = useSettingsStore((s) => s.clock);
   const updateClock = useSettingsStore((s) => s.updateClock);
   const [now, setNow] = useState(() => new Date());
@@ -19,14 +21,14 @@ export function ClockWidget() {
   const minutes = now.getMinutes();
   const seconds = now.getSeconds();
 
-  const formattedTime = now.toLocaleTimeString([], {
+  const formattedTime = formatTime(now, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     hour12: clock.hourFormat === '12h',
   });
 
-  const formattedDate = now.toLocaleDateString([], {
+  const formattedDate = formatDate(now, {
     weekday: 'long',
     month: 'short',
     day: 'numeric',
@@ -59,7 +61,7 @@ export function ClockWidget() {
               height: 'clamp(5.25rem, 48cqi, 14rem)',
             }}
             role="img"
-            aria-label={`Analog clock showing ${formattedTime}`}
+            aria-label={t('clock.analogAria', { time: formattedTime })}
           >
             <circle
               cx="60"
@@ -132,7 +134,7 @@ export function ClockWidget() {
           }
         >
           <ClockIcon size={14} strokeWidth={1.5} />
-          {clock.mode === 'digital' ? 'Analog' : 'Digital'}
+          {clock.mode === 'digital' ? t('clock.analog') : t('clock.digital')}
         </Button>
 
         {clock.mode === 'digital' && (
@@ -154,7 +156,7 @@ export function ClockWidget() {
           onClick={() => updateClock({ showDate: !clock.showDate })}
         >
           <Calendar size={14} strokeWidth={1.5} />
-          Date
+          {t('clock.date')}
         </Button>
       </div>
     </div>

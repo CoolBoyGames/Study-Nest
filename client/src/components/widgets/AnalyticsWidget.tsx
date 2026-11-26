@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { BarChart3, Flame, Plus } from 'lucide-react';
 import type { AnalyticsSummary } from '@studyspace/shared';
 import { toolsApi } from '../../api/tools';
+import { useT } from '../../i18n';
 import { useToastStore } from '../../stores/useToastStore';
 import { Button, Input, Skeleton } from '../ui';
 
@@ -22,6 +23,7 @@ const HEAT_STYLE: Record<number, string> = {
 };
 
 export function AnalyticsWidget() {
+  const { t } = useT();
   const pushToast = useToastStore((s) => s.push);
 
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
@@ -116,14 +118,14 @@ export function AnalyticsWidget() {
           <div className="tabular-nums text-lg font-semibold text-[var(--primary)]">
             {summary.todayMinutes}m
           </div>
-          <div className="text-[11px] text-[var(--text-muted)]">Today</div>
+          <div className="text-[11px] text-[var(--text-muted)]">{t('analytics.today')}</div>
         </div>
         <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] p-2.5">
           <div className="tabular-nums text-lg font-semibold text-[var(--text)]">
             {totalHours}h
           </div>
-          <div className="text-[11px] text-[var(--text-muted)]">
-            Total ({summary.totalSessions})
+          <div className="truncate text-[11px] text-[var(--text-muted)]">
+            {t('analytics.totalHours')} ({summary.totalSessions})
           </div>
         </div>
         <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] p-2.5">
@@ -132,7 +134,7 @@ export function AnalyticsWidget() {
             {summary.currentStreak}d
           </div>
           <div className="text-[11px] text-[var(--text-muted)]">
-            Best {summary.longestStreak}d
+            {t('analytics.streak')} {summary.longestStreak}d
           </div>
         </div>
       </div>
@@ -142,9 +144,9 @@ export function AnalyticsWidget() {
         <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
           <span className="flex items-center gap-1.5 font-medium">
             <BarChart3 size={14} strokeWidth={1.5} />
-            Focus minutes (last 14 days)
+            {t('analytics.last14')}
           </span>
-          <span className="tabular-nums">Goal {summary.dailyGoalMinutes}m</span>
+          <span className="tabular-nums">{summary.dailyGoalMinutes}m</span>
         </div>
 
         <div
@@ -178,7 +180,7 @@ export function AnalyticsWidget() {
       {/* 12-week (84-day) streak heatmap */}
       <div className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] p-3">
         <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-          <span className="font-medium">12-week streak heatmap</span>
+          <span className="font-medium">{t('analytics.heatmap')}</span>
           <div className="flex items-center gap-1 text-[10px]">
             <span>Less</span>
             {[0, 1, 2, 3, 4].map((lvl) => (
@@ -210,7 +212,7 @@ export function AnalyticsWidget() {
       <form onSubmit={(e) => void handleLogManual(e)} className="flex items-end gap-2">
         <div className="flex-1">
           <Input
-            label="Log study minutes"
+            label={t('analytics.logManual')}
             type="number"
             min={1}
             max={480}
@@ -220,7 +222,7 @@ export function AnalyticsWidget() {
         </div>
         <Button type="submit" variant="outline">
           <Plus size={15} strokeWidth={1.5} />
-          Log session
+          {t('analytics.logBtn')}
         </Button>
       </form>
     </div>

@@ -1,14 +1,55 @@
-export type ThemeId = 'mild-blue' | 'sage' | 'dusk' | 'paper-light' | 'midnight';
+export type ThemeId =
+  | 'mild-blue'
+  | 'sage'
+  | 'dusk'
+  | 'paper-light'
+  | 'midnight'
+  | 'lavender'
+  | 'warm-sand'
+  | 'ocean-teal'
+  | 'rose-quartz'
+  | 'auto';
 
-export type BackgroundKind = 'gradient' | 'image' | 'video';
+export type AccentId =
+  | 'default'
+  | 'cobalt'
+  | 'indigo'
+  | 'emerald'
+  | 'teal'
+  | 'amber'
+  | 'rose'
+  | 'plum'
+  | 'slate';
+
+export type AnimationLevel = 'off' | 'low' | 'normal';
+
+export type LocaleId = 'en' | 'vi';
+
+export type BackgroundKind = 'gradient' | 'animated' | 'image' | 'video';
+
+export type AnimatedBgId =
+  | 'rain-glass'
+  | 'aurora'
+  | 'clouds'
+  | 'starfield'
+  | 'bokeh'
+  | 'snowfall'
+  | 'gradient-mesh';
 
 export interface BackgroundConfig {
   kind: BackgroundKind;
   presetId: string;
+  animatedId?: AnimatedBgId;
+  animatedIntensity?: number;
   imageUrl: string;
   videoUrl: string;
+  recentVideoSources?: string[];
   blurPx: number;
   dimPercent: number;
+  brightnessPercent?: number;
+  vignettePercent?: number;
+  filmGrain?: boolean;
+  autoRotateMinutes?: number;
 }
 
 export type WidgetId =

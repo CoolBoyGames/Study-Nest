@@ -1,4 +1,10 @@
-export type SpotifyResourceType = 'track' | 'album' | 'playlist' | 'episode' | 'show';
+export type SpotifyResourceType =
+  | 'track'
+  | 'album'
+  | 'playlist'
+  | 'episode'
+  | 'show'
+  | 'artist';
 
 export interface ParsedSpotifyLink {
   type: SpotifyResourceType;
@@ -12,14 +18,17 @@ const VALID_TYPES = new Set<SpotifyResourceType>([
   'playlist',
   'episode',
   'show',
+  'artist',
 ]);
 
 export function parseSpotifyUrl(raw: string): ParsedSpotifyLink | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
 
-  // Support spotify:playlist:<id> URI format
-  const uriMatch = /^spotify:(track|album|playlist|episode|show):([A-Za-z0-9]+)$/i.exec(trimmed);
+  // Support spotify:<type>:<id> URI format
+  const uriMatch = /^spotify:(track|album|playlist|episode|show|artist):([A-Za-z0-9]+)$/i.exec(
+    trimmed
+  );
   if (uriMatch) {
     const type = uriMatch[1]?.toLowerCase() as SpotifyResourceType | undefined;
     const id = uriMatch[2];
@@ -34,6 +43,9 @@ export function parseSpotifyUrl(raw: string): ParsedSpotifyLink | null {
 
   try {
     const url = new URL(trimmed);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+      return null;
+    }
     if (url.hostname !== 'open.spotify.com' && url.hostname !== 'play.spotify.com') {
       return null;
     }

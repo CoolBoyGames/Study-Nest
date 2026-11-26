@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { Music, Trash2 } from 'lucide-react';
+import { useT } from '../../i18n';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { parseSpotifyUrl, SAMPLE_STUDY_PLAYLIST } from '../../utils/spotify';
 import { Button, EmptyState, IconButton, Input } from '../ui';
 
 export function SpotifyWidget() {
+  const { t } = useT();
   const spotifyUrl = useSettingsStore((s) => s.spotifyUrl);
   const setSpotifyUrl = useSettingsStore((s) => s.setSpotifyUrl);
   const pushToast = useToastStore((s) => s.push);
@@ -19,12 +21,12 @@ export function SpotifyWidget() {
     e.preventDefault();
     const next = parseSpotifyUrl(draft);
     if (!next) {
-      setError('Paste a valid Spotify playlist, album, or track URL.');
+      setError(t('spotify.invalidLink'));
       return;
     }
     setError('');
     setSpotifyUrl(draft.trim());
-    pushToast('Spotify embed updated.', 'success');
+    pushToast(t('spotify.updated'), 'success');
   };
 
   const handleUseSample = () => {
@@ -39,14 +41,15 @@ export function SpotifyWidget() {
     setSpotifyUrl('');
   };
 
-  const embedHeight = parsed?.type === 'track' || parsed?.type === 'episode' ? 152 : 232;
-
   return (
-    <div className="flex flex-col gap-3">
-      <form onSubmit={handleSubmit} className="flex items-start gap-2">
-        <div className="flex-1">
+    <div className="flex h-full min-h-0 w-full flex-col">
+      <form
+        onSubmit={handleSubmit}
+        className="flex shrink-0 items-start gap-2 border-b border-[var(--border)] px-3 py-2"
+      >
+        <div className="min-w-0 flex-1">
           <Input
-            aria-label="Spotify link"
+            aria-label={t('spotify.linkAria')}
             placeholder="https://open.spotify.com/playlist/..."
             value={draft}
             error={error}
@@ -56,38 +59,37 @@ export function SpotifyWidget() {
             }}
           />
         </div>
-        <Button type="submit" variant="primary">
-          Load
+        <Button type="submit" variant="primary" size="sm">
+          {t('spotify.load')}
         </Button>
         {spotifyUrl && (
-          <IconButton label="Clear Spotify link" onClick={handleClear}>
+          <IconButton label={t('spotify.clear')} onClick={handleClear}>
             <Trash2 size={16} strokeWidth={1.5} />
           </IconButton>
         )}
       </form>
 
       {parsed ? (
-        <div
-          style={{ height: `${embedHeight}px` }}
-          className="w-full overflow-hidden rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)]"
-        >
+        <div className="relative min-h-[152px] w-full flex-1 overflow-hidden rounded-b-[calc(var(--radius-md)-1px)] bg-[var(--surface)]">
           <iframe
             title="Spotify player"
             src={parsed.embedUrl}
             width="100%"
-            height={embedHeight}
+            height="100%"
             loading="lazy"
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            className="border-0"
+            className="block h-full w-full border-0"
           />
         </div>
       ) : (
-        <EmptyState
-          icon={<Music size={24} strokeWidth={1.5} />}
-          message="Paste a Spotify playlist, album, or track link to listen while studying."
-          actionLabel="Load calm lo-fi playlist"
-          onAction={handleUseSample}
-        />
+        <div className="flex flex-1 items-center justify-center p-4">
+          <EmptyState
+            icon={<Music size={24} strokeWidth={1.5} />}
+            message={t('spotify.empty')}
+            actionLabel={t('spotify.sampleBtn')}
+            onAction={handleUseSample}
+          />
+        </div>
       )}
     </div>
   );

@@ -8,9 +8,16 @@ export interface ModalProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  maxWidthClass?: string;
 }
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  maxWidthClass = 'max-w-lg',
+}: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -63,15 +70,15 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="glass-panel animate-fade-in w-full max-w-lg p-6 text-[var(--text)]"
+        className={`glass-panel animate-fade-in flex max-h-[86vh] w-full flex-col p-6 text-[var(--text)] ${maxWidthClass}`}
       >
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
           <h2 className="font-heading text-xl font-semibold">{title}</h2>
           <IconButton label="Close dialog" onClick={onClose}>
             <X size={20} strokeWidth={1.5} />
           </IconButton>
         </div>
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">{children}</div>
       </div>
     </div>
   );

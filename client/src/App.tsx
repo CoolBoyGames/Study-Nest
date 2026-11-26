@@ -1,9 +1,12 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useState } from 'react';
 import { EyeOff, Settings2 } from 'lucide-react';
 import type { WidgetId } from '@studyspace/shared';
 import { Z_DOCK, Z_WIDGET } from './constants/zIndex';
+import { resolveEffectiveTheme } from './constants/themes';
+import { useT } from './i18n';
 import { BackgroundLayer } from './components/study/BackgroundLayer';
 import { BottomDock } from './components/study/BottomDock';
+import { OptionsModal } from './components/study/OptionsModal';
 import { ShortcutHelpModal } from './components/study/ShortcutHelpModal';
 import { WidgetWindow } from './components/study/WidgetWindow';
 import { Button, Skeleton, ToastContainer } from './components/ui';
@@ -42,7 +45,11 @@ const SHORTCUT_WIDGET_MAP: Record<string, WidgetId> = {
 };
 
 export function App() {
+  const { t } = useT();
+  const locale = useSettingsStore((s) => s.locale);
   const theme = useSettingsStore((s) => s.theme);
+  const accent = useSettingsStore((s) => s.accent);
+  const animationLevel = useSettingsStore((s) => s.animationLevel);
   const widgets = useSettingsStore((s) => s.widgets);
   const activeMobileWidget = useSettingsStore((s) => s.activeMobileWidget);
   const focusMode = useSettingsStore((s) => s.focusMode);
@@ -52,14 +59,37 @@ export function App() {
   const toggleWidget = useSettingsStore((s) => s.toggleWidget);
 
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(() =>
     typeof window !== 'undefined' ? getLayoutMode(window.innerWidth) : 'free'
   );
 
-  // Sync theme token attribute on :root
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+  // Sync theme token (resolving 'auto' by time of day), accent, motion, and language on :root
+  useLayoutEffect(() => {
+    const apply = () => {
+      document.documentElement.setAttribute('data-theme', resolveEffectiveTheme(theme));
+    };
+    apply();
+    if (theme !== 'auto') return;
+    const timer = window.setInterval(apply, 60_000);
+    return () => window.clearInterval(timer);
   }, [theme]);
+
+  useLayoutEffect(() => {
+    if (accent && accent !== 'default') {
+      document.documentElement.setAttribute('data-accent', accent);
+    } else {
+      document.documentElement.removeAttribute('data-accent');
+    }
+  }, [accent]);
+
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute('data-motion', animationLevel);
+  }, [animationLevel]);
+
+  useLayoutEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   // Responsive breakpoint listener
   useEffect(() => {
@@ -82,6 +112,10 @@ export function App() {
           target.isContentEditable);
 
       if (e.key === 'Escape') {
+        if (optionsOpen) {
+          setOptionsOpen(false);
+          return;
+        }
         if (shortcutsOpen) {
           setShortcutsOpen(false);
           return;
@@ -93,6 +127,12 @@ export function App() {
       }
 
       if (inEditable) return;
+
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key === ',') {
+        e.preventDefault();
+        setOptionsOpen((prev) => !prev);
+        return;
+      }
 
       if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault();
@@ -143,7 +183,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [focusMode, setFocusMode, shortcutsOpen, toggleFocusMode, toggleWidget]);
+  }, [focusMode, optionsOpen, setFocusMode, shortcutsOpen, toggleFocusMode, toggleWidget]);
 
   const renderWidgetContent = (id: WidgetId) => {
     switch (id) {
@@ -189,17 +229,17 @@ export function App() {
   };
 
   const widgetDefs: { id: WidgetId; title: string }[] = [
-    { id: 'today', title: 'Today' },
-    { id: 'clock', title: 'Clock' },
-    { id: 'pomodoro', title: 'Focus Timer' },
-    { id: 'timetable', title: 'Timetable' },
-    { id: 'vocab', title: 'Vocabulary SRS' },
-    { id: 'todos', title: 'Daily To-Do' },
-    { id: 'notes', title: 'Scratchpad' },
-    { id: 'analytics', title: 'Study Analytics' },
-    { id: 'ambient', title: 'Ambient Sounds' },
-    { id: 'spotify', title: 'Spotify' },
-    { id: 'appearance', title: 'Appearance' },
+    { id: 'today', title: t('widget.today') },
+    { id: 'clock', title: t('widget.clock') },
+    { id: 'pomodoro', title: t('widget.pomodoro') },
+    { id: 'timetable', title: t('widget.timetable') },
+    { id: 'vocab', title: t('widget.vocab') },
+    { id: 'todos', title: t('widget.todos') },
+    { id: 'notes', title: t('widget.notes') },
+    { id: 'analytics', title: t('widget.analytics') },
+    { id: 'ambient', title: t('widget.ambient') },
+    { id: 'spotify', title: t('widget.spotify') },
+    { id: 'appearance', title: t('widget.appearance') },
   ];
 
   const displayedDefs = focusMode
@@ -215,7 +255,7 @@ export function App() {
       <BackgroundLayer />
 
       <main
-        aria-label="StudyNest workspace"
+        aria-label={t('workspace.aria')}
         style={{ zIndex: Z_WIDGET }}
         className={
           layoutMode === 'free'
@@ -228,7 +268,7 @@ export function App() {
         {!anyVisible && (
           <div className="pointer-events-none flex h-full w-full items-center justify-center">
             <p className="glass-panel px-5 py-3 text-sm text-[var(--text-muted)]">
-              Use the dock below to open your study widgets, or press ? for shortcuts.
+              {t('workspace.emptyHint')}
             </p>
           </div>
         )}
@@ -257,6 +297,7 @@ export function App() {
       <BottomDock
         isMobile={layoutMode === 'sheet'}
         onOpenShortcuts={() => setShortcutsOpen(true)}
+        onOpenOptions={() => setOptionsOpen(true)}
       />
 
       {focusMode && (
@@ -266,15 +307,16 @@ export function App() {
         >
           <Button variant="ghost" size="sm" onClick={() => setShortcutsOpen(true)}>
             <Settings2 size={15} strokeWidth={1.5} />
-            Focus widgets
+            {t('focus.widgetsBtn')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setFocusMode(false)}>
             <EyeOff size={15} strokeWidth={1.5} />
-            Exit Focus (F)
+            {t('focus.exitBtn')}
           </Button>
         </div>
       )}
 
+      <OptionsModal open={optionsOpen} onClose={() => setOptionsOpen(false)} />
       <ShortcutHelpModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <ToastContainer />
     </div>

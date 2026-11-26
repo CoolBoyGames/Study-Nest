@@ -12,11 +12,13 @@ import { plannerApi } from '../../api/planner';
 import { tasksApi } from '../../api/tasks';
 import { toolsApi } from '../../api/tools';
 import { vocabApi } from '../../api/vocab';
+import { useT } from '../../i18n';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { Button, ProgressBar, Select, Skeleton } from '../ui';
 import { NextUpBar } from './timetable/NextUpBar';
 
 export function TodayWidget() {
+  const { t } = useT();
   const semester = useSettingsStore((s) => s.semester);
   const selectedCourseId = useSettingsStore((s) => s.selectedCourseId);
   const setSelectedCourseId = useSettingsStore((s) => s.setSelectedCourseId);
@@ -139,11 +141,11 @@ export function TodayWidget() {
     <div className="flex flex-col gap-3">
       {/* Shared course selector */}
       <Select
-        aria-label="Filter workspace by course"
+        aria-label={t('today.courseFilter')}
         value={selectedCourseId}
         onChange={(e) => setSelectedCourseId(e.target.value)}
         options={[
-          { value: '', label: 'All courses' },
+          { value: '', label: t('today.allCourses') },
           ...courses.map((c) => ({
             value: c.id,
             label: c.code ? `${c.code} · ${c.name}` : c.name,
@@ -158,9 +160,9 @@ export function TodayWidget() {
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] p-2.5">
           <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-            <span className="flex items-center gap-1">
-              <Flame size={13} strokeWidth={1.5} className="text-[var(--warning)]" />
-              Focus
+            <span className="flex items-center gap-1 truncate">
+              <Flame size={13} strokeWidth={1.5} className="shrink-0 text-[var(--warning)]" />
+              {t('today.focusToday')}
             </span>
             <span className="tabular-nums font-semibold text-[var(--text)]">
               {todayMins} / {goalMins}m
@@ -168,7 +170,7 @@ export function TodayWidget() {
           </div>
           <ProgressBar
             value={(todayMins / Math.max(1, goalMins)) * 100}
-            label="Focus minutes today"
+            label={t('today.focusToday')}
           />
         </div>
 
@@ -178,32 +180,32 @@ export function TodayWidget() {
           className="flex cursor-pointer flex-col justify-between rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] p-2.5 text-left hover:bg-[var(--surface-hover)]"
         >
           <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-            <span className="flex items-center gap-1">
-              <BookOpen size={13} strokeWidth={1.5} />
-              Vocab due
+            <span className="flex items-center gap-1 truncate">
+              <BookOpen size={13} strokeWidth={1.5} className="shrink-0" />
+              {t('today.vocabDue')}
             </span>
-            <ArrowRight size={13} strokeWidth={1.5} />
+            <ArrowRight size={13} strokeWidth={1.5} className="shrink-0" />
           </div>
           <div className="tabular-nums text-lg font-semibold text-[var(--primary)]">
-            {vocabStats?.dueToday ?? 0} cards
+            {vocabStats?.dueToday ?? 0}
           </div>
         </button>
       </div>
 
       {/* Tasks due today */}
       <div className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] p-2.5">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)]">
-            <CheckSquare size={14} strokeWidth={1.5} />
-            Tasks due today ({dueTodayTasks.length})
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex min-w-0 items-center gap-1.5 truncate text-xs font-medium text-[var(--text-muted)]">
+            <CheckSquare size={14} strokeWidth={1.5} className="shrink-0" />
+            {t('today.tasksDue', { count: dueTodayTasks.length })}
           </span>
           <Button variant="ghost" size="sm" onClick={() => setWidgetVisible('todos', true)}>
-            Open Tasks
+            {t('today.openTasks')}
           </Button>
         </div>
 
         {dueTodayTasks.length === 0 ? (
-          <p className="text-xs text-[var(--text-muted)]">No remaining tasks due today.</p>
+          <p className="text-xs text-[var(--text-muted)]">{t('today.noTasksDue')}</p>
         ) : (
           <ul className="flex max-h-36 flex-col gap-1 overflow-y-auto">
             {dueTodayTasks.slice(0, 5).map((task) => (

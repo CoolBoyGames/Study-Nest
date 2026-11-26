@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { CloudRain, Coffee, Volume2, VolumeX, Wind } from 'lucide-react';
 import type { AmbientChannelId } from '@studyspace/shared';
+import { useT } from '../../i18n';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { Button, IconButton, Slider } from '../ui';
@@ -21,10 +22,17 @@ const CHANNELS: ChannelMeta[] = [
 ];
 
 export function AmbientSoundsWidget() {
+  const { t } = useT();
   const ambient = useSettingsStore((s) => s.ambient);
   const toggleAmbientChannel = useSettingsStore((s) => s.toggleAmbientChannel);
   const setAmbientVolume = useSettingsStore((s) => s.setAmbientVolume);
   const pushToast = useToastStore((s) => s.push);
+
+  const labelFor = (id: AmbientChannelId): string => {
+    if (id === 'rain') return t('ambient.rain');
+    if (id === 'cafe') return t('ambient.cafe');
+    return t('ambient.whiteNoise');
+  };
 
   const audioRefs = useRef<Partial<Record<AmbientChannelId, HTMLAudioElement>>>({});
 
@@ -36,14 +44,14 @@ export function AmbientSoundsWidget() {
       el.volume = state.volume;
       if (state.playing && el.paused) {
         void el.play().catch(() => {
-          pushToast(`Unable to play ${ch.label.toLowerCase()} audio.`, 'warning');
+          pushToast(t('ambient.playError', { label: ch.label.toLowerCase() }), 'warning');
           toggleAmbientChannel(ch.id);
         });
       } else if (!state.playing && !el.paused) {
         el.pause();
       }
     }
-  }, [ambient, pushToast, toggleAmbientChannel]);
+  }, [ambient, pushToast, t, toggleAmbientChannel]);
 
   const anyPlaying = CHANNELS.some((c) => ambient[c.id].playing);
 
@@ -59,6 +67,7 @@ export function AmbientSoundsWidget() {
     <div className="flex flex-col gap-3">
       {CHANNELS.map((ch) => {
         const Icon = ch.icon;
+        const label = labelFor(ch.id);
         const state = ambient[ch.id];
         const pct = Math.round(state.volume * 100);
 
@@ -77,7 +86,7 @@ export function AmbientSoundsWidget() {
             />
 
             <IconButton
-              label={state.playing ? `Pause ${ch.label}` : `Play ${ch.label}`}
+              label={state.playing ? t('ambient.pause', { label }) : t('ambient.play', { label })}
               active={state.playing}
               onClick={() => toggleAmbientChannel(ch.id)}
             >
@@ -86,7 +95,7 @@ export function AmbientSoundsWidget() {
 
             <div className="flex-1">
               <Slider
-                label={ch.label}
+                label={label}
                 min={0}
                 max={100}
                 value={pct}
@@ -108,7 +117,7 @@ export function AmbientSoundsWidget() {
 
       {anyPlaying && (
         <Button variant="ghost" size="sm" onClick={stopAll} className="self-end">
-          Pause all sounds
+          {t('ambient.pauseAll')}
         </Button>
       )}
     </div>

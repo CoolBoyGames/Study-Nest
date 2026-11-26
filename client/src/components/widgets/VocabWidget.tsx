@@ -8,6 +8,7 @@ import type {
   VocabCardWithPreviews,
 } from '@studyspace/shared';
 import { vocabApi, type CardPayload } from '../../api/vocab';
+import { useT } from '../../i18n';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { Button, EmptyState, IconButton, Input, Modal, Select, Skeleton, Tabs } from '../ui';
@@ -17,13 +18,8 @@ import { VocabReviewSession } from './vocab/VocabReviewSession';
 
 type VocabTab = 'review' | 'cards' | 'io';
 
-const VOCAB_TABS: { id: VocabTab; label: string }[] = [
-  { id: 'review', label: 'Review' },
-  { id: 'cards', label: 'Cards' },
-  { id: 'io', label: 'Import / Export' },
-];
-
 export function VocabWidget() {
+  const { t } = useT();
   const pushToast = useToastStore((s) => s.push);
   const vocabQuickAddDraft = useSettingsStore((s) => s.vocabQuickAddDraft);
   const setVocabQuickAddDraft = useSettingsStore((s) => s.setVocabQuickAddDraft);
@@ -292,31 +288,37 @@ export function VocabWidget() {
                 <div className="tabular-nums text-sm font-semibold text-[var(--primary)]">
                   {stats.dueToday}
                 </div>
-                <div className="text-[11px] text-[var(--text-muted)]">Due</div>
+                <div className="truncate text-[11px] text-[var(--text-muted)]">{t('vocab.dueToday')}</div>
               </div>
               <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5">
                 <div className="tabular-nums text-sm font-semibold text-[var(--text)]">
                   {stats.newCount}/{stats.learnedCount}
                 </div>
-                <div className="text-[11px] text-[var(--text-muted)]">New/Lrn</div>
+                <div className="truncate text-[11px] text-[var(--text-muted)]">
+                  {t('vocab.new')}/{t('vocab.learned')}
+                </div>
               </div>
               <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5">
                 <div className="tabular-nums text-sm font-semibold text-[var(--text)]">
                   {stats.retentionRate}%
                 </div>
-                <div className="text-[11px] text-[var(--text-muted)]">Retain</div>
+                <div className="truncate text-[11px] text-[var(--text-muted)]">{t('vocab.retention')}</div>
               </div>
               <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5">
                 <div className="tabular-nums text-sm font-semibold text-[var(--text)]">
                   {stats.reviewStreak}d
                 </div>
-                <div className="text-[11px] text-[var(--text-muted)]">Streak</div>
+                <div className="truncate text-[11px] text-[var(--text-muted)]">{t('vocab.streak')}</div>
               </div>
             </div>
           )}
 
           <Tabs
-            items={VOCAB_TABS}
+            items={[
+              { id: 'review' as VocabTab, label: t('vocab.review') },
+              { id: 'cards' as VocabTab, label: t('vocab.cards') },
+              { id: 'io' as VocabTab, label: t('vocab.io') },
+            ]}
             value={activeTab}
             onChange={(next) => {
               if (vocabQuickAddDraft && next !== 'cards') setVocabQuickAddDraft(null);

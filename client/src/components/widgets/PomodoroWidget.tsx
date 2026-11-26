@@ -2,18 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pause, Play, RotateCcw, Settings2, SkipForward, X } from 'lucide-react';
 import type { PomodoroPhase } from '@studyspace/shared';
 import { toolsApi } from '../../api/tools';
+import { useT } from '../../i18n';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { playSoftChime } from '../../utils/chime';
 import { Button, IconButton, Input, ProgressBar, Tabs, Toggle } from '../ui';
 
-const PHASE_TABS: { id: PomodoroPhase; label: string }[] = [
-  { id: 'focus', label: 'Focus' },
-  { id: 'short-break', label: 'Short' },
-  { id: 'long-break', label: 'Long' },
-];
-
 export function PomodoroWidget() {
+  const { t } = useT();
   const settings = useSettingsStore((s) => s.pomodoro);
   const updatePomodoro = useSettingsStore((s) => s.updatePomodoro);
   const activeTask = useSettingsStore((s) => s.activeTask);
@@ -26,6 +22,7 @@ export function PomodoroWidget() {
   const [running, setRunning] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [liveMessage, setLiveMessage] = useState('');
+  const [justCompleted, setJustCompleted] = useState(false);
 
   const phaseDurationSeconds = useCallback(
     (targetPhase: PomodoroPhase): number => {
@@ -50,15 +47,19 @@ export function PomodoroWidget() {
       if (!isSkip && settings.soundEnabled) {
         playSoftChime();
       }
+      if (!isSkip) {
+        setJustCompleted(true);
+        window.setTimeout(() => setJustCompleted(false), 2000);
+      }
 
       const finishedLabel =
         phase === 'focus'
           ? isSkip
-            ? 'Skipped to break.'
-            : 'Focus session complete. Time for a break.'
+            ? t('pomodoro.skippedBreak')
+            : t('pomodoro.completeFocus')
           : isSkip
-            ? 'Skipped to focus.'
-            : 'Break complete. Ready to focus.';
+            ? t('pomodoro.skippedFocus')
+            : t('pomodoro.completeBreak');
 
       setLiveMessage(finishedLabel);
       pushToast(finishedLabel, isSkip ? 'info' : 'success');
@@ -101,6 +102,7 @@ export function PomodoroWidget() {
       settings.notificationsEnabled,
       settings.soundEnabled,
       switchPhase,
+      t,
     ]
   );
 
@@ -166,6 +168,12 @@ export function PomodoroWidget() {
     }
   };
 
+  const phaseTabs: { id: PomodoroPhase; label: string }[] = [
+    { id: 'focus', label: t('pomodoro.focus') },
+    { id: 'short-break', label: t('pomodoro.shortBreak') },
+    { id: 'long-break', label: t('pomodoro.longBreak') },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
       <div className="sr-only" aria-live="polite">
@@ -173,21 +181,21 @@ export function PomodoroWidget() {
       </div>
 
       <Tabs
-        items={PHASE_TABS}
+        items={phaseTabs}
         value={phase}
         onChange={(next) => switchPhase(next, false)}
-        ariaLabel="Timer mode"
+        ariaLabel={t('pomodoro.modeAria')}
       />
 
       {activeTask && (
         <div className="flex items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs">
           <span className="truncate text-[var(--text)]">
-            <strong className="font-medium text-[var(--primary)]">Focus:</strong>{' '}
+            <strong className="font-medium text-[var(--primary)]">{t('pomodoro.focusedLabel')}</strong>{' '}
             {activeTask.title}
           </span>
           <button
             type="button"
-            aria-label="Clear focused task"
+            aria-label={t('pomodoro.clearTask')}
             onClick={() => setActiveTask(null)}
             className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"
           >
@@ -196,17 +204,51 @@ export function PomodoroWidget() {
         </div>
       )}
 
-      <div className="flex flex-col items-center gap-2 py-1">
+      <div className="relative flex flex-col items-center justify-center py-1">
         <div
-          style={{ fontSize: 'clamp(1.75rem, 15cqi, 4.25rem)' }}
-          className="tabular-nums font-heading font-semibold leading-none text-[var(--text)]"
+          className={`relative flex h-32 w-32 flex-col items-center justify-center rounded-full ${
+            justCompleted ? 'timer-complete-glow ring-4 ring-[var(--primary)]/35' : ''
+          }`}
         >
-          {formatted}
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 120 120"
+            className="pointer-events-none absolute inset-0 h-full w-full -rotate-90"
+          >
+            <circle
+              cx="60"
+              cy="60"
+              r="54"
+              fill="none"
+              stroke="var(--border)"
+              strokeWidth="4"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r="54"
+              fill="none"
+              stroke="var(--primary)"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray={339.29}
+              strokeDashoffset={339.29 * (1 - progress / 100)}
+              className="transition-[stroke-dashoffset] duration-200"
+            />
+          </svg>
+          <div
+            style={{ fontSize: 'clamp(1.5rem, 12cqi, 2.5rem)' }}
+            className="tabular-nums font-heading font-semibold leading-none text-[var(--text)]"
+          >
+            {formatted}
+          </div>
+          <span className="mt-1 text-[11px] text-[var(--text-muted)]">
+            {t('pomodoro.cycle', {
+              current: (completedFocusCount % settings.cyclesBeforeLongBreak) + (phase === 'focus' ? 1 : 0),
+              total: settings.cyclesBeforeLongBreak,
+            })}
+          </span>
         </div>
-        <span className="text-xs text-[var(--text-muted)]">
-          Cycle {completedFocusCount % settings.cyclesBeforeLongBreak + (phase === 'focus' ? 1 : 0)}{' '}
-          of {settings.cyclesBeforeLongBreak}
-        </span>
       </div>
 
       <ProgressBar value={progress} label="Timer progress" />
@@ -214,11 +256,11 @@ export function PomodoroWidget() {
       <div className="flex items-center justify-center gap-2">
         <Button onClick={() => setRunning((r) => !r)} className="flex-1">
           {running ? <Pause size={16} strokeWidth={1.5} /> : <Play size={16} strokeWidth={1.5} />}
-          {running ? 'Pause' : 'Start'}
+          {running ? t('pomodoro.pause') : t('pomodoro.start')}
         </Button>
 
         <IconButton
-          label="Reset timer"
+          label={t('pomodoro.resetTimer')}
           onClick={() => {
             setRunning(false);
             setSecondsLeft(phaseDurationSeconds(phase));
@@ -227,12 +269,12 @@ export function PomodoroWidget() {
           <RotateCcw size={18} strokeWidth={1.5} />
         </IconButton>
 
-        <IconButton label="Skip to next phase" onClick={() => handlePhaseComplete(true)}>
+        <IconButton label={t('pomodoro.skipPhase')} onClick={() => handlePhaseComplete(true)}>
           <SkipForward size={18} strokeWidth={1.5} />
         </IconButton>
 
         <IconButton
-          label="Timer settings"
+          label={t('pomodoro.settings')}
           active={showSettings}
           onClick={() => setShowSettings((s) => !s)}
         >
@@ -244,7 +286,7 @@ export function PomodoroWidget() {
         <div className="animate-fade-in flex flex-col gap-3 border-t border-[var(--border)] pt-3">
           <div className="grid grid-cols-3 gap-2">
             <Input
-              label="Focus (m)"
+              label={t('pomodoro.focusMin')}
               type="number"
               min={1}
               max={120}
@@ -252,7 +294,7 @@ export function PomodoroWidget() {
               onChange={(e) => handleDurationChange('focusMinutes', e.target.value)}
             />
             <Input
-              label="Short (m)"
+              label={t('pomodoro.shortMin')}
               type="number"
               min={1}
               max={60}
@@ -260,7 +302,7 @@ export function PomodoroWidget() {
               onChange={(e) => handleDurationChange('shortBreakMinutes', e.target.value)}
             />
             <Input
-              label="Long (m)"
+              label={t('pomodoro.longMin')}
               type="number"
               min={1}
               max={90}
@@ -270,18 +312,17 @@ export function PomodoroWidget() {
           </div>
 
           <Toggle
-            label="Auto-cycle"
-            description="Start next break or focus automatically"
+            label={t('pomodoro.autoCycle')}
             checked={settings.autoCycle}
             onChange={(autoCycle) => updatePomodoro({ autoCycle })}
           />
           <Toggle
-            label="Soft chime"
+            label={t('pomodoro.chime')}
             checked={settings.soundEnabled}
             onChange={(soundEnabled) => updatePomodoro({ soundEnabled })}
           />
           <Toggle
-            label="Desktop notification"
+            label={t('pomodoro.notifications')}
             checked={settings.notificationsEnabled}
             onChange={(checked) => void handleNotificationsToggle(checked)}
           />

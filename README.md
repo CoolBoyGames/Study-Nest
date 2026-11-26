@@ -64,3 +64,10 @@ This repo includes [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml
 - **Enhanced To-Do (`K`):** Today, Upcoming, Overdue, Done, and All views; inline quick-add syntax (`"Essay !high #cs201 tomorrow"`); subtasks; drag-to-reorder; undo toast; recurring regeneration; Pomodoro `"Focus on this"` linking; and due tasks surfaced on the timetable.
 - **Enhanced Notes (`N`):** Split list/editor/live preview, 300ms debounced autosave, SQLite FTS5 full-text search, notebooks/tags/courses filtering, templates (`Lecture`, `Cornell`, `Meeting`, `Blank`), formatting toolbar, `.md` export, and selected-text → Vocab quick-add.
 - **Today Overview & Shared Course Filter:** Dedicated Today widget showing next class, due tasks, vocab due, focus minutes, and a shared course filter synchronized across Timetable, Tasks, and Notes.
+
+### Phase 5 — Options, i18n & Visual Upgrade (Implemented)
+- **Options Panel (`,` & Dock Gear):** Tabbed workspace settings (`General`, `Appearance`, `Background`, `Sound`, `Shortcuts`, `Data`) with full JSON backup export/import and confirmed settings reset.
+- **English & Tiếng Việt (i18n):** Instant typed localization across all UI controls, `<html lang>` sync, `Intl` date/time formatting, and `Lora`/`Inter` Vietnamese font subsets.
+- **Full-Bleed Spotify Embed:** Edge-to-edge responsive iframe filling resized frames with zero scrollbars, supporting playlists, albums, tracks, episodes, shows, and artists (`open.spotify.com` & `spotify:` URIs).
+- **Video Backgrounds:** Unified input for `.mp4`/`.webm` and YouTube links (Official IFrame Player API, auto-loop, 16:9 cover scaling, pause when hidden or reduced-motion, blocked/error fallback, last 5 recent sources).
+- **9 Themes + Auto, Accent Swatches & 30fps Animated Canvas:** Added Lavender, Warm Sand, Ocean Teal, Rose Quartz, Auto (time-of-day), 8 AA-contrast accent swatches, Animation level (`Off`/`Low`/`Normal`), and 7 built-in 30fps canvas effects (`Rain on Glass`, `Aurora`, `Clouds`, `Starfield`, `Bokeh`, `Snowfall`, `Gradient Mesh`) with brightness, vignette, film grain, and auto-rotate.
